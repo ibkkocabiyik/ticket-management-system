@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
   }
 
+  // Admin ise role de alabilir
+  const session = await auth();
+  const isAdmin = session?.user?.role === "Admin";
+
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -45,11 +49,14 @@ export async function POST(request: NextRequest) {
   }
 
   const { name, email, password } = parsed.data;
+  const role = isAdmin && typeof (body as Record<string, unknown>).role === "string"
+    ? (body as Record<string, unknown>).role as string
+    : "EndUser";
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     return NextResponse.json(
-      { message: "Email already in use" },
+      { message: "Bu e-posta adresi zaten kullanımda" },
       { status: 409 }
     );
   }
@@ -57,18 +64,8 @@ export async function POST(request: NextRequest) {
   const hashedPassword = await bcryptjs.hash(password, 10);
 
   const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      password: hashedPassword,
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      createdAt: true,
-    },
+    data: { name, email, password: hashedPassword, role },
+    select: { id: true, email: true, name: true, role: true, createdAt: true },
   });
 
   return NextResponse.json(user, { status: 201 });
