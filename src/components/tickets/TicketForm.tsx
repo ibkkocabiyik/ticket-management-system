@@ -135,7 +135,7 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   ];
 
   const categoryOptions = categoriesLoading
-    ? [{ value: "", label: "Kategoriler yükleniyor..." }]
+    ? []
     : (categories?.map((c) => ({ value: c.id, label: c.name })) ?? []);
 
   const hasTemplates = !templatesLoading && templates && templates.length > 0;
@@ -237,7 +237,7 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
               name="categoryId"
               control={control}
               render={({ field }) => (
-                <RadixSelect value={field.value ?? ""} onValueChange={field.onChange}>
+                <RadixSelect value={field.value || undefined} onValueChange={field.onChange}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Kategori seçin" />
                   </SelectTrigger>
@@ -261,7 +261,7 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
             name="priority"
             control={control}
             render={({ field }) => (
-              <RadixSelect value={field.value ?? ""} onValueChange={field.onChange}>
+              <RadixSelect value={field.value || undefined} onValueChange={field.onChange}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Öncelik seçin" />
                 </SelectTrigger>
