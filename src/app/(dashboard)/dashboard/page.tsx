@@ -20,6 +20,7 @@ import {
   AlertCircle,
   PlusCircle,
   TrendingUp,
+  FileText,
 } from "lucide-react";
 
 function StatCard({
@@ -165,6 +166,14 @@ export default function DashboardPage() {
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Tüm Talepler</span>
                       </div>
                     </Link>
+                    {session?.user?.role === "Admin" && (
+                      <Link href="/admin/templates">
+                        <div className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 p-3 transition-colors hover:border-[#6366F1]/20 hover:bg-[#EEF2FF] dark:border-gray-700 dark:hover:border-[#6366F1]/30 dark:hover:bg-[#312E81]/20">
+                          <FileText size={20} className="text-indigo-400" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Şablonlar</span>
+                        </div>
+                      </Link>
+                    )}
                   </div>
                 </Card>
 
