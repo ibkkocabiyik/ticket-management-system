@@ -6,7 +6,13 @@ import { useRouter } from "next/navigation";
 import { useTicket } from "@/hooks/useTicket";
 import { useUpdateTicket, useDeleteTicket } from "@/hooks/useTickets";
 import { StatusBadge, PriorityBadge, Badge } from "@/components/ui/Badge";
-import { Select } from "@/components/ui/Select";
+import {
+  Select as RadixSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/interfaces-select";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { CommentSection } from "./CommentSection";
@@ -306,20 +312,40 @@ export function TicketDetail({ ticketId, onClose }: TicketDetailProps) {
                 Talebi Yönet
               </h2>
               <div className="space-y-3">
-                <Select
-                  label="Durum"
-                  options={statusOptions}
-                  value={pendingStatus ?? ticket.status}
-                  onChange={(e) => void handleStatusChange(e.target.value as Status)}
-                  disabled={isUpdating || pendingStatus !== null}
-                />
-                <Select
-                  label="Öncelik"
-                  options={priorityOptions}
-                  value={pendingPriority ?? ticket.priority}
-                  onChange={(e) => void handlePriorityChange(e.target.value as Priority)}
-                  disabled={isUpdating || pendingPriority !== null}
-                />
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">Durum</label>
+                  <RadixSelect
+                    value={pendingStatus ?? ticket.status}
+                    onValueChange={(v) => void handleStatusChange(v as Status)}
+                    disabled={isUpdating || pendingStatus !== null}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </RadixSelect>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">Öncelik</label>
+                  <RadixSelect
+                    value={pendingPriority ?? ticket.priority}
+                    onValueChange={(v) => void handlePriorityChange(v as Priority)}
+                    disabled={isUpdating || pendingPriority !== null}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorityOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </RadixSelect>
+                </div>
               </div>
             </div>
           )}

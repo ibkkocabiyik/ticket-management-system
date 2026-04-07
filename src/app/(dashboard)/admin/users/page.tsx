@@ -4,7 +4,13 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getUsers, updateUserRole } from "@/lib/api/users";
-import { Select } from "@/components/ui/Select";
+import {
+  Select as RadixSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/interfaces-select";
 import { Card } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import type { User, Role } from "@/types";
@@ -134,13 +140,20 @@ function UserRow({
           {user.role === "SupportTeam" ? "Destek Ekibi" : user.role === "EndUser" ? "Son Kullanıcı" : user.role}
         </span>
 
-        <Select
-          options={roleOptions}
+        <RadixSelect
           value={user.role}
-          onChange={(e) => void handleRoleChange(e.target.value as Role)}
+          onValueChange={(v) => void handleRoleChange(v as Role)}
           disabled={mutation.isPending || isSelf}
-          className="w-28 sm:w-36"
-        />
+        >
+          <SelectTrigger className="w-28 sm:w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {roleOptions.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </RadixSelect>
       </div>
     </div>
   );

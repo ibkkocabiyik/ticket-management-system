@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -18,6 +18,13 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Spinner } from "@/components/ui/Spinner";
+import {
+  Select as RadixSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/interfaces-select";
 import type { TicketTemplate } from "@/types";
 import { FileText, Plus, Edit, Trash2, AlertCircle, Tag } from "lucide-react";
 import Swal from "sweetalert2";
@@ -57,6 +64,7 @@ function TemplateForm({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<TemplateInput>({
     resolver: zodResolver(templateSchema),
@@ -76,18 +84,26 @@ function TemplateForm({
         <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
           Kategori
         </label>
-        <select
-          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          {...register("categoryId")}
-        >
-          <option value="">Kategori seçin</option>
-          {!categoriesLoading &&
-            categories?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-        </select>
+        <Controller
+          name="categoryId"
+          control={control}
+          render={({ field }) => (
+            <RadixSelect
+              value={field.value ?? ""}
+              onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Kategori seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Kategori seçin</SelectItem>
+                {!categoriesLoading && categories?.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </RadixSelect>
+          )}
+        />
         {errors.categoryId && (
           <p className="mt-1 text-xs text-red-500 dark:text-red-400">
             {errors.categoryId.message}

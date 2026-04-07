@@ -18,6 +18,19 @@ const actionLabels: Record<string, string> = {
   assignee_changed: "Atanan değiştirildi",
   assignee_released: "Atanan bırakıldı",
   title_changed: "Başlık değiştirildi",
+  updated: "Güncellendi",
+};
+
+const fieldLabels: Record<string, string> = {
+  status: "Durum",
+  priority: "Öncelik",
+  assignee: "Atanan",
+  title: "Başlık",
+};
+
+const valueLabels: Record<string, string> = {
+  Open: "Açık", InProgress: "Devam Ediyor", Waiting: "Beklemede", Resolved: "Çözüldü", Closed: "Kapatıldı",
+  Low: "Düşük", Normal: "Normal", High: "Yüksek", Urgent: "Acil",
 };
 
 const roleColors: Record<string, string> = {
@@ -68,10 +81,12 @@ function HistoryItem({ entry }: { entry: TicketHistory }) {
         {/* Old → New value */}
         {entry.field && (entry.oldValue !== undefined || entry.newValue !== undefined) && (
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-gray-500 dark:text-gray-400">{entry.field}:</span>
+            <span className="text-gray-500 dark:text-gray-400">
+              {fieldLabels[entry.field] ?? entry.field}:
+            </span>
             {entry.oldValue ? (
               <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-700 line-through dark:bg-red-900/20 dark:text-red-400">
-                {entry.oldValue}
+                {valueLabels[entry.oldValue] ?? entry.oldValue}
               </span>
             ) : (
               <span className="text-gray-400 italic">boş</span>
@@ -79,7 +94,7 @@ function HistoryItem({ entry }: { entry: TicketHistory }) {
             <ArrowRight size={10} className="text-gray-400 shrink-0" />
             {entry.newValue ? (
               <span className="rounded bg-green-50 px-1.5 py-0.5 text-green-700 dark:bg-green-900/20 dark:text-green-400">
-                {entry.newValue}
+                {valueLabels[entry.newValue] ?? entry.newValue}
               </span>
             ) : (
               <span className="text-gray-400 italic">boş</span>

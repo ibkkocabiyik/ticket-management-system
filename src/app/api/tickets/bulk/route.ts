@@ -43,9 +43,18 @@ export async function POST(request: NextRequest) {
   }
 
   const field = action === "status" ? "status" : "priority";
+  const historyAction = action === "status" ? "status_changed" : "priority_changed";
+  const historyField = action === "status" ? "Durum" : "Öncelik";
   const value = parsed.data.value;
 
-  // Mevcut ticket değerlerini al (history için)
+  const STATUS_TR: Record<string, string> = {
+    Open: "Açık", InProgress: "Devam Ediyor", Waiting: "Beklemede", Resolved: "Çözüldü", Closed: "Kapatıldı",
+  };
+  const PRIORITY_TR: Record<string, string> = {
+    Low: "Düşük", Normal: "Normal", High: "Yüksek", Urgent: "Acil",
+  };
+  const translate = (v: string) => (action === "status" ? STATUS_TR[v] : PRIORITY_TR[v]) ?? v;
+
   const tickets = await prisma.ticket.findMany({
     where: { id: { in: ids } },
     select: { id: true, status: true, priority: true },
@@ -56,15 +65,14 @@ export async function POST(request: NextRequest) {
     data: { [field]: value, updatedAt: new Date() },
   });
 
-  // Her ticket için history kaydı yaz
   await prisma.ticketHistory.createMany({
     data: tickets.map((t) => ({
       ticketId: t.id,
       userId: session.user.id,
-      action: "updated",
-      field,
-      oldValue: field === "status" ? t.status : t.priority,
-      newValue: value,
+      action: historyAction,
+      field: historyField,
+      oldValue: translate(field === "status" ? t.status : t.priority),
+      newValue: translate(value),
     })),
   });
 
