@@ -222,7 +222,31 @@ Yetkilendirme: Admin, Destek Ekibi, Son Kullanıcı rolleri
 
 Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm -rf .next`), sunucuyu yeniden başlat.
 
+### Tamamlananlar ✅ (devam)
+
+- **GitHub'a yüklendi** — `https://github.com/ibkkocabiyik/ticket-management-system` (master branch)
+- **Vercel'e deploy edildi** — `https://ticket-teal.vercel.app`
+  - Build scripti `prisma generate && next build` olarak güncellendi
+  - TypeScript build hataları düzeltildi: `categoryId?: string`, `template.category?.name`, `user.password` null guard
+  - `NEXTAUTH_URL` production URL'ye güncellendi
+- **Veritabanı PostgreSQL'e taşındı** — Neon.tech (eu-central-1)
+  - `prisma/schema.prisma` → `provider: "postgresql"`, `directUrl` eklendi
+  - `DATABASE_URL` (pooled) ve `DIRECT_URL` (direct) Vercel env'e eklendi
+  - `AUTH_SECRET` Vercel env'e eklendi
+  - `prisma db push` ile şema Neon'a yansıtıldı, seed verisi yüklendi
+- **Bildirim sistemi SSE→Polling'e taşındı** — Vercel serverless ortamında SSE (Server-Sent Events) in-memory state paylaşamadığı için çalışmıyor; `useNotifications` hook'u her 10 saniyede polling yapacak şekilde yeniden yazıldı
+
+### ⚠️ Vercel / Production Notları
+- SSE (`/api/notifications/stream`) Vercel'de çalışmaz — serverless'ta kalıcı bağlantı ve in-memory state paylaşımı desteklenmez
+- Bildirimler şu an polling ile çalışıyor (10s interval); ses tetikleme `unreadCount` artışına bağlı
+- Dosya yükleme (`public/uploads/`) Vercel'de kalıcı değil — ileride S3/Cloudflare R2'ye taşınmalı
+
 ### Sıradaki
+
+**Bildirim Sesi (bekleyen)**
+- `useNotifications` hook'unda polling ile `unreadCount` artışı tespit ediliyor ancak ses çalmıyor
+- Muhtemel sebep: tarayıcı AudioContext'i kullanıcı etkileşimi olmadan başlatmayı engelliyor (autoplay policy)
+- Çözüm önerisi: kullanıcının ilk etkileşiminde (tıklama) AudioContext'i başlatıp `suspended` → `running` state'e almak (`ctx.resume()`)
 
 **Aşama 4: Ticket Şablonları**
 - Yaygın sorunlar için hazır ticket taslakları
