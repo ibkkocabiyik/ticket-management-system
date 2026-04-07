@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { useCreateTicket } from "@/hooks/useTickets";
@@ -50,6 +49,7 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
     register,
     handleSubmit,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CreateTicketInput>({
     resolver: zodResolver(createTicketSchema),
@@ -231,22 +231,52 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
             </div>
           </div>
         ) : (
-          <Select
-            label="Kategori"
-            options={categoryOptions}
-            placeholder="Kategori seçin"
-            error={errors.categoryId?.message}
-            {...register("categoryId")}
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Kategori</label>
+            <Controller
+              name="categoryId"
+              control={control}
+              render={({ field }) => (
+                <RadixSelect value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Kategori seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </RadixSelect>
+              )}
+            />
+            {errors.categoryId && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.categoryId.message}</p>
+            )}
+          </div>
         )}
 
-        <Select
-          label="Öncelik"
-          options={priorityOptions}
-          placeholder="Öncelik seçin"
-          defaultValue=""
-          {...register("priority")}
-        />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Öncelik</label>
+          <Controller
+            name="priority"
+            control={control}
+            render={({ field }) => (
+              <RadixSelect value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Öncelik seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorityOptions.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </RadixSelect>
+            )}
+          />
+          {errors.priority && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.priority.message}</p>
+          )}
+        </div>
       </div>
 
       <FileInput files={attachedFiles} onChange={setAttachedFiles} />
