@@ -166,6 +166,7 @@ Yetkilendirme: Admin, Destek Ekibi, Son Kullanıcı rolleri
 - Aşama 5: Referans görsellere dayalı tam tasarım dönüşümü (mor/indigo primary, lavender bg, tablo layout, yeni login, sidebar, header)
 - Aşama 5b: UX iyileştirmeleri — filtre dropdown'ları yan yana, Yeni Talep modal'a taşındı, SweetAlert2 kapsamı genişledi
 - Aşama 3: Dosya Ekleri — ticket ve yorumlara dosya/resim/PDF ekleme (max 5MB, `public/uploads/`, `Attachment` Prisma modeli)
+- **Aşama 4: Ticket Şablonları** — yaygın sorunlar için hazır taslaklar; admin panelinden ekleme/düzenleme/silme; ticket oluştururken şablon seçimi (`TicketTemplate` Prisma modeli, `src/app/(dashboard)/admin/templates/`, `src/hooks/useTemplates.ts`)
 
 ### SweetAlert2 Kullanım Alanları
 - TicketDetail: silme, üstlenme, bırakma, **durum değiştirme**, **öncelik değiştirme**
@@ -235,6 +236,24 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
   - `AUTH_SECRET` Vercel env'e eklendi
   - `prisma db push` ile şema Neon'a yansıtıldı, seed verisi yüklendi
 - **Bildirim sistemi SSE→Polling'e taşındı** — Vercel serverless ortamında SSE (Server-Sent Events) in-memory state paylaşamadığı için çalışmıyor; `useNotifications` hook'u her 10 saniyede polling yapacak şekilde yeniden yazıldı
+- **Ticket toplu işlemler (bulk actions)** — Admin'e özel çoklu seçim modu; durum değiştir, öncelik değiştir, sil işlemleri
+  - `src/app/api/tickets/bulk/route.ts` → POST endpoint; delete/status/priority bulk işlemleri, `TicketHistory` Türkçe alan adları ile yazılıyor
+  - `src/components/tickets/TicketList.tsx` → "Çoklu Seçim" butonu, aksiyon çubuğu (Durum Değiştir / Öncelik Değiştir / Sil), "Tümünü seç" checkbox; seçim modunda grid `grid-cols-[32px_2fr_1.5fr_1fr_1fr_1fr_52px]`
+  - `src/components/tickets/TicketCard.tsx` → `selectable`, `selected`, `onSelect` prop'ları eklendi
+  - `src/hooks/useTickets.ts` → `useBulkTicketAction` mutation hook eklendi
+  - `src/lib/api/tickets.ts` → `BulkAction` tipi ve `bulkTicketAction` fonksiyonu eklendi
+- **Tüm dropdown'lar Radix UI'ya taşındı** — TicketDetail (durum/öncelik), TicketForm (kategori/öncelik), admin/templates (kategori) artık `interfaces-select` kullanıyor; `Controller` ile react-hook-form entegrasyonu
+- **Ticket geçmişi tamamen Türkçeleştirildi** — `TicketHistoryLog.tsx`'e `fieldLabels` ve `valueLabels` eklendi; tüm Status/Priority İngilizce değerleri Türkçe görüntüleniyor
+- **Dashboard'a mobil-only Şablonlar kartı eklendi** — `src/app/(dashboard)/dashboard/page.tsx`; `className="md:hidden"` ile yalnızca mobilde admin'e görünür
+- **Admin kullanıcı yönetimi modal ile yeniden tasarlandı** — `src/app/(dashboard)/admin/users/page.tsx`
+  - Satır içi düzenleme kaldırıldı; satıra tıklayınca `EditUserModal` açılıyor
+  - `EditUserModal`: isim Input, rol Radix Select (kendisi için disabled), read-only email, Sil butonu (kendi hesabı değilse), İptal + Kaydet
+  - `CreateUserModal`: isim, e-posta, şifre, rol alanları; admin yeni kullanıcı ekleyebiliyor
+  - Çoklu seçim + toplu silme desteği
+  - `src/app/api/users/[id]/route.ts` → PATCH artık hem `name` hem `role` kabul ediyor; DELETE handler eklendi
+  - `src/app/api/users/bulk/route.ts` → POST, Admin-only toplu silme (kendi hesabı korunuyor)
+  - `src/app/api/users/route.ts` → POST artık Admin ise `role` parametresi kabul ediyor
+  - `src/lib/api/users.ts` → `createUser`, `updateUserName`, `deleteUser`, `bulkDeleteUsers` eklendi
 
 ### ⚠️ Vercel / Production Notları
 - SSE (`/api/notifications/stream`) Vercel'de çalışmaz — serverless'ta kalıcı bağlantı ve in-memory state paylaşımı desteklenmez
@@ -247,11 +266,6 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
 - `useNotifications` hook'unda polling ile `unreadCount` artışı tespit ediliyor ancak ses çalmıyor
 - Muhtemel sebep: tarayıcı AudioContext'i kullanıcı etkileşimi olmadan başlatmayı engelliyor (autoplay policy)
 - Çözüm önerisi: kullanıcının ilk etkileşiminde (tıklama) AudioContext'i başlatıp `suspended` → `running` state'e almak (`ctx.resume()`)
-
-**Aşama 4: Ticket Şablonları**
-- Yaygın sorunlar için hazır ticket taslakları
-- Admin panelinden şablon ekleme/düzenleme
-- Ticket oluştururken şablon seçimi
 
 **Aşama 7: E-posta Bildirimleri**
 - Nodemailer entegrasyonu
