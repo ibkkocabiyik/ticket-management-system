@@ -1,0 +1,521 @@
+================================================================
+  TICKETHUb — TEKNİK RAPOR VE KURULUM KILAVUZU
+  Hazırlanma Tarihi: Nisan 2026
+================================================================
+
+
+----------------------------------------------------------------
+1. PROJEYE GENEL BAKIŞ
+----------------------------------------------------------------
+
+TicketHub, web tabanlı bir destek talebi (ticket) yönetim
+sistemidir. Şirket içi ya da müşterilere yönelik destek
+süreçlerini yönetmek için kullanılır.
+
+Kullanılan teknolojiler:
+
+  - Framework    : Next.js 14 (App Router)
+  - Dil          : TypeScript
+  - Veritabanı   : SQLite (geliştirme) / PostgreSQL (prodüksiyon önerisi)
+  - ORM          : Prisma 5
+  - Kimlik doğr. : NextAuth v5 (JWT tabanlı)
+  - Stil         : Tailwind CSS
+  - UI bileşenl. : Lucide React, SweetAlert2, TipTap editör
+  - Veri fetch   : TanStack React Query v5
+  - Gerçek zamanlı bildirim: SSE (Server-Sent Events)
+  - Dosya yükleme: Next.js API Route + public/uploads/ klasörü
+
+
+----------------------------------------------------------------
+2. VERİTABANI YAPISI
+----------------------------------------------------------------
+
+Veritabanı Prisma ORM ile yönetilmektedir.
+Şema dosyası: prisma/schema.prisma
+
+TABLOLAR VE GÖREVLERİ:
+
+  User
+  ----
+  Sistemdeki tüm kullanıcıları tutar.
+  Alanlar: id, email (unique), name, password (bcrypt hash),
+           role (Admin / SupportTeam / EndUser), createdAt
+
+  Category
+  --------
+  Ticket kategorilerini tanımlar (örn: Domain & DNS, SSL, Hosting).
+  Alanlar: id, name (unique), description
+
+  Ticket
+  ------
+  Ana varlık. Her destek talebi bir kayıttır.
+  Alanlar: id, title, description (HTML), status, priority,
+           createdAt, updatedAt, creatorId (FK→User),
+           assigneeId (FK→User, nullable), categoryId (FK→Category)
+  Status değerleri : Open, InProgress, Waiting, Resolved, Closed
+  Priority değerleri: Low, Normal, High, Urgent
+
+  Comment
+  -------
+  Ticket'lara yapılan yorumlar. Cascade delete uygulanır
+  (ticket silinince yorumlar da silinir).
+  Alanlar: id, content (HTML), createdAt, authorId, ticketId
+
+  Attachment
+  ----------
+  Ticket veya yorumlara eklenen dosyalar.
+  Fiziksel dosyalar: public/uploads/ klasöründe saklanır.
+  Alanlar: id, filename (orijinal ad), storedName (UUID.uzantı),
+           mimeType, size, url, ticketId?, commentId?
+
+  Notification
+  ------------
+  Kullanıcı bildirimleri. SSE ile gerçek zamanlı iletilir.
+  Alanlar: id, userId, ticketId?, type, message, isRead, createdAt
+  Type değerleri: ticket_created, comment_added,
+                  status_changed, ticket_assigned
+
+  TicketHistory
+  -------------
+  Her durum/öncelik/atama değişikliği audit log olarak tutulur.
+  Alanlar: id, ticketId, userId, action, field, oldValue,
+           newValue, createdAt
+
+İLİŞKİ DİYAGRAMI (özet):
+
+  User ──< Ticket (creator)
+  User ──< Ticket (assignee, optional)
+  User ──< Comment
+  User ──< Notification
+  User ──< TicketHistory
+  Category ──< Ticket
+  Ticket ──< Comment ──< Attachment
+  Ticket ──< Attachment
+  Ticket ──< Notification
+  Ticket ──< TicketHistory
+
+
+----------------------------------------------------------------
+3. BACK-END MİMARİSİ
+----------------------------------------------------------------
+
+API ROUTE'LARI (src/app/api/):
+
+  POST   /api/auth/[...nextauth]   Giriş / çıkış (NextAuth)
+
+  GET    /api/tickets              Ticket listesi (filtre, sayfalama)
+  POST   /api/tickets              Yeni ticket oluştur
+  GET    /api/tickets/[id]         Tek ticket detayı
+  PATCH  /api/tickets/[id]         Ticket güncelle (durum/öncelik/atama)
+  DELETE /api/tickets/[id]         Ticket sil (sadece Admin)
+
+  GET    /api/tickets/[id]/comments   Yorumları getir
+  POST   /api/tickets/[id]/comments   Yorum ekle
+
+  GET    /api/tickets/[id]/history    Audit log
+
+  GET    /api/categories           Kategori listesi
+  POST   /api/categories           Yeni kategori (Admin)
+  PATCH  /api/categories/[id]      Kategori güncelle (Admin)
+  DELETE /api/categories/[id]      Kategori sil (Admin)
+
+  GET    /api/users                Kullanıcı listesi (Admin)
+  PATCH  /api/users/[id]           Kullanıcı rolü güncelle (Admin)
+
+  GET    /api/notifications        Bildirimler
+  PATCH  /api/notifications/[id]   Bildirimi okundu işaretle
+  GET    /api/notifications/stream SSE bağlantısı (gerçek zamanlı)
+
+  POST   /api/upload               Dosya yükleme (max 5MB)
+
+  GET    /api/dashboard/stats      Panel istatistikleri
+  GET    /api/dashboard/summary    Özet sekme verileri
+
+YETKİLENDİRME MODELİ:
+
+  Her API route başında `const session = await auth()` ile
+  oturum doğrulanır. Yetkisiz istekler 401 döner.
+
+  Admin      → Her şeye tam erişim
+  SupportTeam → Tüm ticketları görür/yönetir, kullanıcı yönetemez
+  EndUser    → Yalnızca kendi ticketlarını görür/oluşturur
+
+GERÇEk ZAMANLI BİLDİRİMLER (SSE):
+
+  Kullanıcı giriş yaptığında /api/notifications/stream
+  endpoint'ine bağlanır. Bağlantı açık kaldığı sürece
+  sunucu bildirim push eder. Her 25 saniyede ping gönderilir.
+  Bağlantı kesilirse client 5 saniye sonra yeniden bağlanır.
+  Ayrıca 30 saniyede bir polling fallback mevcuttur.
+
+
+----------------------------------------------------------------
+4. YEREL GELİŞTİRME ORTAMI KURULUMU
+----------------------------------------------------------------
+
+GEREKSİNİMLER:
+  - Node.js 18 veya üzeri
+  - npm 9 veya üzeri
+
+ADIM 1 — Bağımlılıkları yükle:
+
+  npm install
+
+ADIM 2 — Ortam değişkenlerini ayarla:
+
+  Proje kökünde .env dosyası oluştur:
+
+  DATABASE_URL="file:./dev.db"
+  AUTH_SECRET="buraya-gizli-anahtar-yaz"
+
+  AUTH_SECRET üretmek için terminalde çalıştır:
+  node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+ADIM 3 — Veritabanını oluştur:
+
+  npm run db:push
+
+ADIM 4 — Örnek verileri yükle (isteğe bağlı):
+
+  npm run db:seed
+
+ADIM 5 — Geliştirme sunucusunu başlat:
+
+  npm run dev
+
+  Uygulama http://localhost:3000 adresinde çalışır.
+
+KULLANICI BİLGİLERİ (seed sonrası):
+
+  Admin    : admin@hostpanel.com.tr      / admin123
+  Destek 1 : teknik1@hostpanel.com.tr    / support123
+  Destek 2 : teknik2@hostpanel.com.tr    / support123
+  Kullanıcı: info@digitalmedya.com.tr    / user123
+
+
+----------------------------------------------------------------
+5. PRODÜKSIYON SUNUCUSUNA DAĞITIM
+----------------------------------------------------------------
+
+SEÇENEK A — VPS / Dedicated Sunucu (Ubuntu 22.04 önerilir)
+
+  ADIM 1 — Sunucuya Node.js kur:
+
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+
+  ADIM 2 — PM2 kur (Node.js process manager):
+
+    sudo npm install -g pm2
+
+  ADIM 3 — Proje dosyalarını sunucuya aktar:
+
+    Yöntem 1 — Git ile:
+      git clone https://github.com/kullanici/tickethub.git /var/www/tickethub
+
+    Yöntem 2 — SCP ile:
+      scp -r ./ticket kullanici@sunucu-ip:/var/www/tickethub
+
+  ADIM 4 — Bağımlılıkları yükle:
+
+    cd /var/www/tickethub
+    npm install --production
+
+  ADIM 5 — .env dosyasını oluştur:
+
+    nano .env
+
+    İçerik (SQLite için):
+      DATABASE_URL="file:/var/www/tickethub/prisma/prod.db"
+      AUTH_SECRET="uzun-ve-rastgele-bir-deger"
+      NEXTAUTH_URL="https://yourdomain.com"
+
+  ADIM 6 — Veritabanını oluştur:
+
+    npx prisma db push
+
+  ADIM 7 — Production build al:
+
+    npm run build
+
+  ADIM 8 — PM2 ile başlat:
+
+    pm2 start npm --name "tickethub" -- start
+    pm2 save
+    pm2 startup
+
+  ADIM 9 — Nginx ile reverse proxy kur:
+
+    sudo apt install nginx
+    sudo nano /etc/nginx/sites-available/tickethub
+
+    Dosya içeriği:
+    ──────────────────────────────────────
+    server {
+        listen 80;
+        server_name yourdomain.com www.yourdomain.com;
+
+        location / {
+            proxy_pass http://localhost:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_cache_bypass $http_upgrade;
+
+            # SSE için önemli — buffering'i kapat
+            proxy_buffering off;
+            proxy_read_timeout 86400s;
+        }
+    }
+    ──────────────────────────────────────
+
+    sudo ln -s /etc/nginx/sites-available/tickethub /etc/nginx/sites-enabled/
+    sudo nginx -t
+    sudo systemctl reload nginx
+
+  ADIM 10 — SSL sertifikası (Let's Encrypt / ücretsiz):
+
+    sudo apt install certbot python3-certbot-nginx
+    sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+
+
+SEÇENEK B — Vercel (En kolay yöntem)
+
+  1. vercel.com'da hesap aç
+  2. GitHub reposunu bağla
+  3. Environment Variables bölümüne .env değerlerini gir:
+     - DATABASE_URL
+     - AUTH_SECRET
+     - NEXTAUTH_URL
+  4. Deploy et
+
+  NOT: Vercel'de SQLite çalışmaz (ephemeral filesystem).
+  Mutlaka PostgreSQL kullanılmalıdır (aşağıya bakın).
+
+
+SEÇENEK C — Railway veya Render
+
+  Bu platformlar hem Node.js uygulamasını hem de
+  PostgreSQL veritabanını barındırabilir.
+  railway.app veya render.com üzerinden ücretsiz plan ile başlanabilir.
+
+
+----------------------------------------------------------------
+6. SQLite'TAN PostgreSQL'E GEÇİŞ (ÖNERİLİR)
+----------------------------------------------------------------
+
+SQLite tek kullanıcı için iyidir ama prodüksiyonda birden
+fazla eş zamanlı yazma işleminde sorun yaratır.
+Vercel gibi platformlarda hiç çalışmaz.
+
+ADIM 1 — PostgreSQL bağlantısı al:
+
+  Ücretsiz seçenekler:
+  - Supabase (supabase.com) — 500MB ücretsiz
+  - Neon (neon.tech) — 512MB ücretsiz
+  - Railway — 1GB ücretsiz
+
+ADIM 2 — schema.prisma dosyasını güncelle:
+
+  datasource db {
+    provider = "postgresql"         ← sqlite → postgresql
+    url      = env("DATABASE_URL")
+  }
+
+ADIM 3 — .env dosyasını güncelle:
+
+  DATABASE_URL="postgresql://kullanici:sifre@host:5432/dbadi"
+
+ADIM 4 — Migration oluştur ve uygula:
+
+  npx prisma migrate deploy
+
+ADIM 5 — Prisma client'ı yeniden oluştur:
+
+  npx prisma generate
+
+
+----------------------------------------------------------------
+7. DOSYA YÜKLEME SİSTEMİ — ÖNEMLİ UYARI
+----------------------------------------------------------------
+
+Şu an dosyalar public/uploads/ klasörüne kaydedilmektedir.
+Bu yaklaşım prodüksiyonda şu sorunları yaratır:
+
+SORUN 1 — Vercel ve benzeri platformlarda dosya sistemi
+  her deploy'da sıfırlanır. Yüklenen dosyalar kaybolur.
+
+SORUN 2 — Birden fazla sunucu instance'ı varsa
+  (yük dengeleme) dosyalar paylaşılamaz.
+
+ÇÖZÜM — Bulut depolama entegrasyonu:
+
+  A) AWS S3 (en yaygın):
+     - @aws-sdk/client-s3 paketi ekle
+     - Upload API route'unu S3'e yükleyecek şekilde güncelle
+     - .env'e AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+       AWS_REGION, AWS_BUCKET_NAME ekle
+
+  B) Cloudflare R2 (S3 uyumlu, ücretsiz egress):
+     - S3 SDK ile çalışır, endpoint değişir
+
+  C) Supabase Storage (PostgreSQL ile birlikte kullanılırsa ideal):
+     - @supabase/supabase-js paketi ekle
+
+
+----------------------------------------------------------------
+8. OLASI SORUNLAR VE ÇÖZÜMLERI
+----------------------------------------------------------------
+
+SORUN: "Cannot find module '@prisma/client'"
+ÇÖZÜM: npx prisma generate komutunu çalıştır.
+       Bu komut her schema değişikliğinden sonra gereklidir.
+
+──────────────────────────────────────────────────
+
+SORUN: Giriş yapılıyor ama oturum hemen kapanıyor
+ÇÖZÜM: AUTH_SECRET değeri eksik veya hatalı.
+       .env dosyasını kontrol et.
+       Prodüksiyonda NEXTAUTH_URL de set edilmeli.
+
+──────────────────────────────────────────────────
+
+SORUN: SSE bildirimleri çalışmıyor (Nginx arkasında)
+ÇÖZÜM: Nginx config'ine şu satırları ekle:
+       proxy_buffering off;
+       proxy_read_timeout 86400s;
+       proxy_set_header Connection '';
+       proxy_http_version 1.1;
+
+──────────────────────────────────────────────────
+
+SORUN: "SQLITE_BUSY" veya database locked hatası
+ÇÖZÜM: SQLite eş zamanlı yazmalarda kilitlenir.
+       Çözüm: PostgreSQL'e geç (Bölüm 6).
+
+──────────────────────────────────────────────────
+
+SORUN: Dosya yükleme çalışıyor ama resimler görünmüyor
+ÇÖZÜM: public/uploads/ klasörünün var olduğundan emin ol.
+       mkdir -p public/uploads
+       Vercel'de çalışmaz — bulut depolama gerekir (Bölüm 7).
+
+──────────────────────────────────────────────────
+
+SORUN: Build sırasında "Type error" hatası
+ÇÖZÜM: npx tsc --noEmit komutu ile hataları listele.
+       Genellikle eksik tip tanımı veya null check sorunudur.
+
+──────────────────────────────────────────────────
+
+SORUN: Prisma Studio'da veri görünmüyor
+ÇÖZÜM: DATABASE_URL'in doğru dosyaya işaret ettiğini kontrol et.
+       Dev ve prod farklı .db dosyaları kullanabilir.
+
+──────────────────────────────────────────────────
+
+SORUN: "Port 3000 already in use"
+ÇÖZÜM: lsof -i :3000 (Mac/Linux) veya
+       netstat -ano | findstr :3000 (Windows)
+       komutu ile kullanan process'i bul ve sonlandır.
+       Ya da farklı port: PORT=3001 npm start
+
+──────────────────────────────────────────────────
+
+SORUN: Dark mode prodüksiyonda çalışmıyor
+ÇÖZÜM: next.config.js'de output: 'standalone' kullanılıyorsa
+       Tailwind CSS purge ayarlarını kontrol et.
+       tailwind.config.ts'deki content dizisinin tüm
+       bileşen dosyalarını kapsadığına emin ol.
+
+
+----------------------------------------------------------------
+9. GÜVENLİK ÖNERİLERİ
+----------------------------------------------------------------
+
+1. .env dosyasını asla git'e commit etme.
+   .gitignore'da ".env" satırının olduğundan emin ol.
+
+2. AUTH_SECRET en az 32 karakter rastgele değer olmalı.
+
+3. Prodüksiyonda HTTPS zorunlu. Let's Encrypt ücretsizdir.
+
+4. Dosya yükleme limiti şu an 5MB. İhtiyaca göre
+   src/app/api/upload/route.ts içinde ayarlanabilir.
+
+5. Rate limiting eklemek için next-rate-limit veya
+   Nginx'in limit_req modülü kullanılabilir.
+
+6. Düzenli veritabanı yedeklemesi için cron job kur:
+   0 2 * * * cp /var/www/tickethub/prisma/prod.db /backup/prod-$(date +%Y%m%d).db
+
+
+----------------------------------------------------------------
+10. BAKIM VE GÜNCELLEME
+----------------------------------------------------------------
+
+Bağımlılıkları güncelle:
+  npm update
+  npx prisma generate  (schema değişmediyse atla)
+
+Log takibi (PM2):
+  pm2 logs tickethub
+  pm2 monit
+
+Uygulamayı yeniden başlat:
+  pm2 restart tickethub
+
+Sıfırdan deploy:
+  git pull
+  npm install
+  npm run build
+  pm2 restart tickethub
+
+Veritabanı yedekle (SQLite):
+  cp prisma/prod.db prisma/prod-backup-$(date +%Y%m%d).db
+
+Veritabanı görsel arayüzü:
+  npm run db:studio
+  (Tarayıcıda http://localhost:5555 açılır)
+
+
+----------------------------------------------------------------
+11. PROJE KLASÖR YAPISI
+----------------------------------------------------------------
+
+ticket/
+├── prisma/
+│   ├── schema.prisma       Veritabanı şeması
+│   ├── seed.ts             Örnek veri yükleyici
+│   └── dev.db              SQLite dosyası (git'e ekleme)
+├── public/
+│   └── uploads/            Yüklenen dosyalar
+├── src/
+│   ├── app/
+│   │   ├── (auth)/         Giriş/kayıt sayfaları
+│   │   ├── (dashboard)/    Korumalı uygulama sayfaları
+│   │   └── api/            Backend API route'ları
+│   ├── components/
+│   │   ├── ui/             Genel UI bileşenleri
+│   │   ├── tickets/        Ticket domain bileşenleri
+│   │   └── layout/         Header, Sidebar, BottomNav
+│   ├── context/            React context'leri
+│   ├── hooks/              React Query hook'ları
+│   ├── lib/
+│   │   ├── api/            Client-side fetch fonksiyonları
+│   │   ├── auth.ts         NextAuth konfigürasyonu
+│   │   ├── db.ts           Prisma client singleton
+│   │   ├── notifications.ts Bildirim yardımcıları
+│   │   └── sse.ts          SSE yöneticisi
+│   └── types/index.ts      TypeScript tip tanımları
+├── .env                    Ortam değişkenleri (git'e ekleme!)
+├── next.config.js
+├── tailwind.config.ts
+└── package.json
+
+================================================================
+  Bu rapor TicketHub projesine özel hazırlanmıştır.
+  Nisan 2026
+================================================================
