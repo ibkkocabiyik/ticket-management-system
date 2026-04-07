@@ -10,7 +10,7 @@ export async function createTemplate(data: {
   name: string;
   title: string;
   description: string;
-  categoryId: string;
+  categoryId?: string;
 }): Promise<TicketTemplate> {
   const res = await fetch("/api/templates", {
     method: "POST",

@@ -300,7 +300,7 @@ function AdminTemplatesContent() {
                       <div className="mt-0.5 flex items-center gap-1">
                         <Tag size={10} className="text-gray-400 shrink-0" />
                         <span className="text-xs text-gray-400 truncate">
-                          {template.category.name}
+                          {template.category?.name}
                         </span>
                       </div>
                     </div>
@@ -358,7 +358,7 @@ function AdminTemplatesContent() {
               name: editingTemplate.name,
               title: editingTemplate.title,
               description: editingTemplate.description,
-              categoryId: editingTemplate.categoryId,
+              categoryId: editingTemplate.categoryId ?? undefined,
             }}
             isSubmitting={isSubmitting}
             submitLabel="Değişiklikleri Kaydet"
