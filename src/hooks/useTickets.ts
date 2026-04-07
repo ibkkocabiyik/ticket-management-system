@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTickets, createTicket, updateTicket, deleteTicket } from "@/lib/api/tickets";
+import { getTickets, createTicket, updateTicket, deleteTicket, bulkTicketAction, type BulkAction } from "@/lib/api/tickets";
 import type { TicketFilters } from "@/types";
 import type { CreateTicketInput, UpdateTicketInput } from "@/lib/validations/ticket";
 
@@ -38,6 +38,16 @@ export function useDeleteTicket() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteTicket(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+}
+
+export function useBulkTicketAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: BulkAction) => bulkTicketAction(data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tickets"] });
     },

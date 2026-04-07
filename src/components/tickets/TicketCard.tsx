@@ -8,9 +8,19 @@ interface TicketCardProps {
   ticket: Ticket;
   onClick?: (id: string) => void;
   isNew?: boolean;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string, checked: boolean) => void;
 }
 
-export function TicketCard({ ticket, onClick, isNew = false }: TicketCardProps) {
+export function TicketCard({
+  ticket,
+  onClick,
+  isNew = false,
+  selectable = false,
+  selected = false,
+  onSelect,
+}: TicketCardProps) {
   const formattedDate = new Date(ticket.createdAt).toLocaleDateString("tr-TR", {
     month: "short",
     day: "numeric",
@@ -18,22 +28,36 @@ export function TicketCard({ ticket, onClick, isNew = false }: TicketCardProps) 
   });
 
   const animClass = isNew ? "animate-slide-in-fade-in" : "";
+  const selectedClass = selected ? "bg-indigo-50/70 dark:bg-indigo-900/20" : "";
+
+  function handleCheckbox(e: React.MouseEvent) {
+    e.stopPropagation();
+  }
 
   return (
     <>
       {/* ── Mobil kart (< md) ── */}
       <div
-        className={`md:hidden flex items-start gap-3 px-4 py-3.5 active:bg-gray-50 dark:active:bg-gray-800/40 cursor-pointer ${animClass} ${isNew ? "bg-[#EEF2FF]/60 dark:bg-[#312E81]/10" : ""}`}
-        onClick={() => onClick?.(ticket.id)}
+        className={`md:hidden flex items-start gap-3 px-4 py-3.5 active:bg-gray-50 dark:active:bg-gray-800/40 cursor-pointer ${animClass} ${isNew ? "bg-[#EEF2FF]/60 dark:bg-[#312E81]/10" : ""} ${selectedClass}`}
+        onClick={() => selectable ? onSelect?.(ticket.id, !selected) : onClick?.(ticket.id)}
       >
-        {/* Sol: öncelik renk çizgisi */}
-        <div className={`mt-1 h-full w-1 self-stretch rounded-full shrink-0 ${
-          ticket.priority === "Urgent" ? "bg-red-500" :
-          ticket.priority === "High" ? "bg-amber-500" :
-          ticket.priority === "Normal" ? "bg-blue-500" : "bg-gray-300"
-        }`} />
+        {selectable ? (
+          <div className="mt-1 shrink-0" onClick={handleCheckbox}>
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(e) => onSelect?.(ticket.id, e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-[#6366F1] accent-[#6366F1] cursor-pointer"
+            />
+          </div>
+        ) : (
+          <div className={`mt-1 h-full w-1 self-stretch rounded-full shrink-0 ${
+            ticket.priority === "Urgent" ? "bg-red-500" :
+            ticket.priority === "High" ? "bg-amber-500" :
+            ticket.priority === "Normal" ? "bg-blue-500" : "bg-gray-300"
+          }`} />
+        )}
 
-        {/* İçerik */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
             {ticket.title}
@@ -63,15 +87,31 @@ export function TicketCard({ ticket, onClick, isNew = false }: TicketCardProps) 
           </div>
         </div>
 
-        {/* Sağ ok */}
-        <ChevronRight size={16} className="mt-1 shrink-0 text-gray-300 dark:text-gray-600" />
+        {!selectable && (
+          <ChevronRight size={16} className="mt-1 shrink-0 text-gray-300 dark:text-gray-600" />
+        )}
       </div>
 
       {/* ── Masaüstü satır (≥ md) ── */}
       <div
-        className={`hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_52px] gap-4 items-center px-5 py-4 transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-800/40 cursor-pointer group ${animClass} ${isNew ? "bg-[#EEF2FF]/60 dark:bg-[#312E81]/10" : ""}`}
-        onClick={() => onClick?.(ticket.id)}
+        className={`hidden md:grid items-center px-5 py-4 transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-800/40 cursor-pointer group ${animClass} ${isNew ? "bg-[#EEF2FF]/60 dark:bg-[#312E81]/10" : ""} ${selectedClass} ${
+          selectable
+            ? "grid-cols-[32px_2fr_1.5fr_1fr_1fr_1fr_52px] gap-4"
+            : "grid-cols-[2fr_1.5fr_1fr_1fr_1fr_52px] gap-4"
+        }`}
+        onClick={() => selectable ? onSelect?.(ticket.id, !selected) : onClick?.(ticket.id)}
       >
+        {selectable && (
+          <div onClick={handleCheckbox}>
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(e) => onSelect?.(ticket.id, e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-[#6366F1] accent-[#6366F1] cursor-pointer"
+            />
+          </div>
+        )}
+
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-gray-900 transition-colors group-hover:text-[#6366F1] dark:text-gray-100 dark:group-hover:text-indigo-400">
             {ticket.title}
@@ -107,12 +147,14 @@ export function TicketCard({ ticket, onClick, isNew = false }: TicketCardProps) 
         <PriorityBadge priority={ticket.priority} />
 
         <div className="flex justify-end">
-          <button
-            onClick={(e) => { e.stopPropagation(); onClick?.(ticket.id); }}
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-          >
-            <MoreHorizontal size={16} />
-          </button>
+          {!selectable && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onClick?.(ticket.id); }}
+              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+          )}
         </div>
       </div>
     </>

@@ -58,6 +58,24 @@ export async function updateTicket(
   return res.json() as Promise<Ticket>;
 }
 
+export type BulkAction =
+  | { ids: string[]; action: "delete" }
+  | { ids: string[]; action: "status"; value: string }
+  | { ids: string[]; action: "priority"; value: string };
+
+export async function bulkTicketAction(data: BulkAction): Promise<{ affected: number }> {
+  const res = await fetch("/api/tickets/bulk", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json() as { message?: string };
+    throw new Error(error.message ?? "İşlem başarısız");
+  }
+  return res.json() as Promise<{ affected: number }>;
+}
+
 export async function deleteTicket(id: string): Promise<void> {
   const res = await fetch(`/api/tickets/${id}`, {
     method: "DELETE",
