@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import type { User, Role } from "@/types";
-import { Users, Calendar, Shield, CheckSquare, X, Trash2, UserPlus, Pencil, Check } from "lucide-react";
+import { Users, Calendar, Shield, CheckSquare, X, Trash2, UserPlus } from "lucide-react";
 import Swal from "sweetalert2";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -41,6 +41,12 @@ function getSwalTheme() {
   return { background: isDark ? "#1f2937" : "#ffffff", color: isDark ? "#f9fafb" : "#111827" };
 }
 
+const userFormSchema = z.object({
+  name: z.string().min(2, "İsim en az 2 karakter olmalıdır"),
+  role: z.enum(["Admin", "SupportTeam", "EndUser"]),
+});
+type UserFormInput = z.infer<typeof userFormSchema>;
+
 const createUserSchema = z.object({
   name: z.string().min(2, "İsim en az 2 karakter olmalıdır"),
   email: z.string().email("Geçerli bir e-posta girin"),
@@ -49,174 +55,138 @@ const createUserSchema = z.object({
 });
 type CreateUserInput = z.infer<typeof createUserSchema>;
 
-function UserRow({
-  user,
-  currentUserId,
-  selectable,
-  selected,
-  onSelect,
-}: {
-  user: User;
-  currentUserId: string;
-  selectable: boolean;
-  selected: boolean;
-  onSelect: (id: string, checked: boolean) => void;
-}) {
+// ── Kullanıcı Düzenle Modal ──────────────────────────────────────────────────
+function EditUserModal({ user, currentUserId, onClose }: { user: User; currentUserId: string; onClose: () => void }) {
   const queryClient = useQueryClient();
   const isSelf = user.id === currentUserId;
-  const [editingName, setEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState(user.name);
 
-  const roleMutation = useMutation({
-    mutationFn: (role: Role) => updateUserRole(user.id, role),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["users"] }),
+  const { register, handleSubmit, control, formState: { errors, isDirty, isSubmitting } } = useForm<UserFormInput>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: { name: user.name, role: user.role },
   });
 
-  const nameMutation = useMutation({
-    mutationFn: (name: string) => updateUserName(user.id, name),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["users"] });
-      setEditingName(false);
-    },
-  });
-
-  const handleRoleChange = async (newRole: Role) => {
-    if (newRole === user.role) return;
+  const onSubmit = async (data: UserFormInput) => {
     const { background, color } = getSwalTheme();
-    const label = roleOptions.find((r) => r.value === newRole)?.label ?? newRole;
+    try {
+      if (data.name !== user.name) await updateUserName(user.id, data.name);
+      if (data.role !== user.role) await updateUserRole(user.id, data.role);
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
+      onClose();
+      void Swal.fire({ toast: true, position: "top-end", icon: "success", title: "Kullanıcı güncellendi", showConfirmButton: false, timer: 2000, background, color });
+    } catch (e) {
+      void Swal.fire({ title: "Hata", text: e instanceof Error ? e.message : "Güncellenemedi", icon: "error", background, color });
+    }
+  };
+
+  const handleDelete = async () => {
+    const { background, color } = getSwalTheme();
     const result = await Swal.fire({
-      title: "Rol Değiştir",
-      html: `<strong>${user.name}</strong> kullanıcısının rolü <strong>${label}</strong> olarak değiştirilsin mi?`,
-      icon: "question",
+      title: "Kullanıcıyı Sil",
+      html: `<strong>${user.name}</strong> kalıcı olarak silinsin mi?`,
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#6366F1",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Evet, değiştir",
+      confirmButtonText: "Evet, sil",
       cancelButtonText: "İptal",
+      confirmButtonColor: "#EF4444",
       background, color,
     });
     if (!result.isConfirmed) return;
     try {
-      await roleMutation.mutateAsync(newRole);
-      void Swal.fire({ toast: true, position: "top-end", icon: "success", title: "Rol güncellendi", showConfirmButton: false, timer: 2000, background, color });
+      await deleteUser(user.id);
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
+      onClose();
+      void Swal.fire({ toast: true, position: "top-end", icon: "success", title: "Kullanıcı silindi", showConfirmButton: false, timer: 2000, background, color });
     } catch (e) {
-      void Swal.fire({ title: "Hata", text: e instanceof Error ? e.message : "Rol güncellenemedi", icon: "error", background, color });
+      void Swal.fire({ title: "Hata", text: e instanceof Error ? e.message : "Silinemedi", icon: "error", background, color });
     }
   };
 
-  const handleNameSave = async () => {
-    const trimmed = nameValue.trim();
-    if (!trimmed || trimmed === user.name) { setEditingName(false); return; }
-    const { background, color } = getSwalTheme();
-    try {
-      await nameMutation.mutateAsync(trimmed);
-      void Swal.fire({ toast: true, position: "top-end", icon: "success", title: "İsim güncellendi", showConfirmButton: false, timer: 2000, background, color });
-    } catch (e) {
-      void Swal.fire({ title: "Hata", text: e instanceof Error ? e.message : "İsim güncellenemedi", icon: "error", background, color });
-    }
-  };
-
-  const formattedDate = new Date(user.createdAt).toLocaleDateString("tr-TR", { month: "short", day: "numeric", year: "numeric" });
-  const selectedClass = selected ? "bg-indigo-50/70 dark:bg-indigo-900/20" : "";
+  const formattedDate = new Date(user.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <div
-      className={`flex items-center border-b border-gray-100 py-3.5 last:border-0 dark:border-gray-700 px-1 transition-colors ${selectedClass} ${selectable ? "cursor-pointer" : ""}`}
-      onClick={() => selectable && onSelect(user.id, !selected)}
-    >
-      {/* Checkbox */}
-      {selectable && (
-        <div className="mr-3 shrink-0" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={(e) => onSelect(user.id, e.target.checked)}
-            disabled={isSelf}
-            className="h-4 w-4 rounded border-gray-300 accent-[#6366F1] cursor-pointer disabled:opacity-40"
-          />
+    <div className="space-y-5 p-1">
+      {/* Başlık */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#6366F1]/10 dark:bg-[#6366F1]/20">
+          <span className="text-lg font-bold text-[#6366F1] dark:text-indigo-400">
+            {user.name.charAt(0).toUpperCase()}
+          </span>
         </div>
-      )}
-
-      {/* Avatar */}
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6366F1]/10 dark:bg-[#6366F1]/20 mr-3">
-        <span className="text-sm font-semibold text-[#6366F1] dark:text-indigo-400">
-          {user.name.charAt(0).toUpperCase()}
-        </span>
-      </div>
-
-      {/* İsim + email */}
-      <div className="flex-1 min-w-0">
-        {editingName ? (
-          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <input
-              autoFocus
-              value={nameValue}
-              onChange={(e) => setNameValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") void handleNameSave(); if (e.key === "Escape") { setEditingName(false); setNameValue(user.name); } }}
-              className="w-full rounded-lg border border-[#6366F1] bg-white px-2 py-1 text-sm text-gray-900 outline-none dark:bg-gray-800 dark:text-gray-100"
-            />
-            <button onClick={() => void handleNameSave()} disabled={nameMutation.isPending} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#6366F1] text-white hover:bg-indigo-600 disabled:opacity-50">
-              <Check size={13} />
-            </button>
-            <button onClick={() => { setEditingName(false); setNameValue(user.name); }} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-gray-600 dark:border-gray-600">
-              <X size={13} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 group/name">
-            <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-              {user.name}
-              {isSelf && <span className="ml-1.5 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Siz</span>}
-            </p>
-            {!selectable && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setEditingName(true); }}
-                className="hidden group-hover/name:flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:text-[#6366F1]"
-              >
-                <Pencil size={11} />
-              </button>
-            )}
-          </div>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Kullanıcı Düzenle</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+        </div>
+        {isSelf && (
+          <span className="ml-auto rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+            Siz
+          </span>
         )}
-        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
       </div>
 
-      {/* Tarih */}
-      <div className="hidden sm:flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mx-3 shrink-0">
-        <Calendar size={11} />
-        {formattedDate}
-      </div>
+      <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
-      {/* Rol dropdown */}
-      {!selectable && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <RadixSelect
-            value={user.role}
-            onValueChange={(v) => void handleRoleChange(v as Role)}
-            disabled={roleMutation.isPending || isSelf}
-          >
-            <SelectTrigger className="w-28 sm:w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {roleOptions.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </RadixSelect>
+      {/* Form */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <Input
+          label="Ad Soyad"
+          error={errors.name?.message}
+          {...register("name")}
+        />
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Rol</label>
+          <Controller
+            name="role"
+            control={control}
+            render={({ field }) => (
+              <RadixSelect value={field.value} onValueChange={field.onChange} disabled={isSelf}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </RadixSelect>
+            )}
+          />
+          {isSelf && <p className="mt-1 text-xs text-gray-400">Kendi rolünüzü değiştiremezsiniz.</p>}
         </div>
-      )}
 
-      {/* Seçim modunda rol badge */}
-      {selectable && (
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${roleColors[user.role]}`}>
-          {user.role === "SupportTeam" ? "Destek Ekibi" : user.role === "EndUser" ? "Son Kullanıcı" : "Admin"}
-        </span>
-      )}
+        {/* E-posta (read-only bilgi) */}
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">E-posta</label>
+          <div className="flex h-10 items-center rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-400">
+            {user.email}
+          </div>
+        </div>
+
+        {/* Kayıt tarihi */}
+        <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+          <Calendar size={12} />
+          <span>Kayıt tarihi: {formattedDate}</span>
+        </div>
+
+        {/* Butonlar */}
+        <div className="flex items-center gap-3 pt-1">
+          {!isSelf && (
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              className="flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
+            >
+              <Trash2 size={14} />
+              Sil
+            </button>
+          )}
+          <div className="flex flex-1 gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={onClose}>İptal</Button>
+            <Button type="submit" isLoading={isSubmitting} disabled={!isDirty}>Kaydet</Button>
+          </div>
+        </div>
+      </form>
     </div>
   );
 }
 
+// ── Kullanıcı Oluştur Modal ──────────────────────────────────────────────────
 function CreateUserModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<CreateUserInput>({
@@ -265,20 +235,85 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ── Kullanıcı Satırı ─────────────────────────────────────────────────────────
+function UserRow({
+  user,
+  currentUserId,
+  selectable,
+  selected,
+  onSelect,
+  onRowClick,
+}: {
+  user: User;
+  currentUserId: string;
+  selectable: boolean;
+  selected: boolean;
+  onSelect: (id: string, checked: boolean) => void;
+  onRowClick: (user: User) => void;
+}) {
+  const isSelf = user.id === currentUserId;
+  const selectedClass = selected ? "bg-indigo-50/70 dark:bg-indigo-900/20" : "";
+  const formattedDate = new Date(user.createdAt).toLocaleDateString("tr-TR", { month: "short", day: "numeric", year: "numeric" });
+
+  return (
+    <div
+      className={`flex items-center border-b border-gray-100 py-3.5 last:border-0 dark:border-gray-700 px-1 transition-colors cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/40 ${selectedClass}`}
+      onClick={() => selectable ? onSelect(user.id, !selected) : onRowClick(user)}
+    >
+      {/* Checkbox */}
+      {selectable && (
+        <div className="mr-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => onSelect(user.id, e.target.checked)}
+            disabled={isSelf}
+            className="h-4 w-4 rounded border-gray-300 accent-[#6366F1] cursor-pointer disabled:opacity-40"
+          />
+        </div>
+      )}
+
+      {/* Avatar */}
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6366F1]/10 dark:bg-[#6366F1]/20 mr-3">
+        <span className="text-sm font-semibold text-[#6366F1] dark:text-indigo-400">
+          {user.name.charAt(0).toUpperCase()}
+        </span>
+      </div>
+
+      {/* İsim + email */}
+      <div className="flex-1 min-w-0">
+        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+          {user.name}
+          {isSelf && <span className="ml-1.5 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Siz</span>}
+        </p>
+        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+      </div>
+
+      {/* Tarih */}
+      <div className="hidden sm:flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mx-3 shrink-0">
+        <Calendar size={11} />
+        {formattedDate}
+      </div>
+
+      {/* Rol badge */}
+      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${roleColors[user.role]}`}>
+        {user.role === "SupportTeam" ? "Destek Ekibi" : user.role === "EndUser" ? "Son Kullanıcı" : "Admin"}
+      </span>
+    </div>
+  );
+}
+
+// ── Ana Sayfa ─────────────────────────────────────────────────────────────────
 function AdminUsersContent({ currentUserId }: { currentUserId: string }) {
   const queryClient = useQueryClient();
   const { data: users, isLoading, isError } = useQuery({ queryKey: ["users"], queryFn: getUsers });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids: string[]) => bulkDeleteUsers(ids),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["users"] }),
-  });
-
-  const singleDeleteMutation = useMutation({
-    mutationFn: (id: string) => deleteUser(id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["users"] }),
   });
 
@@ -322,29 +357,13 @@ function AdminUsersContent({ currentUserId }: { currentUserId: string }) {
     void Swal.fire({ toast: true, position: "top-end", icon: "success", title: `${count} kullanıcı silindi`, showConfirmButton: false, timer: 2000, background, color });
   }
 
-  async function handleSingleDelete(user: User) {
-    const { background, color } = getSwalTheme();
-    const result = await Swal.fire({
-      title: "Kullanıcıyı Sil",
-      html: `<strong>${user.name}</strong> silinsin mi?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Evet, sil",
-      cancelButtonText: "İptal",
-      confirmButtonColor: "#EF4444",
-      background, color,
-    });
-    if (!result.isConfirmed) return;
-    await singleDeleteMutation.mutateAsync(user.id);
-    void Swal.fire({ toast: true, position: "top-end", icon: "success", title: "Kullanıcı silindi", showConfirmButton: false, timer: 2000, background, color });
-  }
-
   const allSelectable = users?.filter((u) => u.id !== currentUserId) ?? [];
   const allSelected = allSelectable.length > 0 && allSelectable.every((u) => selectedIds.has(u.id));
   const someSelected = selectedIds.size > 0;
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/30">
@@ -362,6 +381,7 @@ function AdminUsersContent({ currentUserId }: { currentUserId: string }) {
         </Button>
       </div>
 
+      {/* İstatistik kartları */}
       <div className="grid gap-3 grid-cols-3">
         {[
           { label: "Toplam", value: users?.length ?? 0, icon: Users, color: "bg-blue-500" },
@@ -440,29 +460,32 @@ function AdminUsersContent({ currentUserId }: { currentUserId: string }) {
         ) : (
           <div>
             {users?.map((user) => (
-              <div key={user.id} className="group/row relative">
-                <UserRow
-                  user={user}
-                  currentUserId={currentUserId}
-                  selectable={selectMode}
-                  selected={selectedIds.has(user.id)}
-                  onSelect={handleSelect}
-                />
-                {!selectMode && user.id !== currentUserId && (
-                  <button
-                    onClick={() => void handleSingleDelete(user)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 hidden group-hover/row:flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                    title="Kullanıcıyı sil"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
+              <UserRow
+                key={user.id}
+                user={user}
+                currentUserId={currentUserId}
+                selectable={selectMode}
+                selected={selectedIds.has(user.id)}
+                onSelect={handleSelect}
+                onRowClick={setEditingUser}
+              />
             ))}
           </div>
         )}
       </Card>
 
+      {/* Kullanıcı Düzenle Modal */}
+      <Modal isOpen={!!editingUser} onClose={() => setEditingUser(null)} size="sm">
+        {editingUser && (
+          <EditUserModal
+            user={editingUser}
+            currentUserId={currentUserId}
+            onClose={() => setEditingUser(null)}
+          />
+        )}
+      </Modal>
+
+      {/* Yeni Kullanıcı Oluştur Modal */}
       <Modal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} size="sm">
         <CreateUserModal onClose={() => setCreateModalOpen(false)} />
       </Modal>
