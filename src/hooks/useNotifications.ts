@@ -40,7 +40,7 @@ export function useNotifications() {
     const notifications = query.data;
     if (!notifications) return;
 
-    const unreadCount = notifications.filter((n) => !n.isRead).length;
+    const unreadCount = notifications.unreadCount;
 
     if (prevCountRef.current !== null && unreadCount > prevCountRef.current) {
       playNotificationSound();
