@@ -263,6 +263,14 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
   - `tailwind.config.ts` → `slide-in-right` keyframe + animation token eklendi
   - Panel özellikleri: son 50 bildirim, okunmamışlar indigo sol border, göreceli zaman ("5 dk önce"), "Tümünü okundu işaretle", mobilde tam genişlik / tablet+ 384px
 
+- **Talep detayı global modal mimarisine taşındı** — tüm talep linklerine tıklandığında ayrı sayfaya gitmek yerine modal açılıyor
+  - `src/context/TicketDetailContext.tsx` → yeni context; `openTicket(id)`, `closeTicket`, `selectedTicketId` state'i
+  - `src/components/tickets/GlobalTicketModal.tsx` → yeni bileşen; context'teki `selectedTicketId`'e göre `Modal + TicketDetail` render eder
+  - `src/app/(dashboard)/layout.tsx` → `TicketDetailProvider` ve `<GlobalTicketModal />` eklendi
+  - `src/app/(dashboard)/tickets/page.tsx` → local `selectedTicketId` state kaldırıldı, local `<Modal>` kaldırıldı; `openTicket` context'ten alınıyor
+  - `src/components/layout/NotificationBell.tsx` → `router.push('/tickets/id')` yerine `openTicket(id)` kullanıyor (hem dropdown hem panel)
+  - `src/components/tickets/TicketForm.tsx` → sayfa modunda oluşturma sonrası `router.push('/tickets')` + `openTicket(id)` kombinasyonu
+
 ### ⚠️ Vercel / Production Notları
 - SSE (`/api/notifications/stream`) Vercel'de çalışmaz — serverless'ta kalıcı bağlantı ve in-memory state paylaşımı desteklenmez
 - Bildirimler şu an polling ile çalışıyor (10s interval); ses tetikleme `unreadCount` artışına bağlı
