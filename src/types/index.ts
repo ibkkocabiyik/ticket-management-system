@@ -8,6 +8,9 @@ export interface User {
   name: string;
   role: Role;
   createdAt: string;
+  phone?: string | null;
+  company?: string | null;
+  image?: string | null;
 }
 
 export interface Category {

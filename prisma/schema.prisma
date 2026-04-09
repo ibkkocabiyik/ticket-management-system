@@ -13,6 +13,9 @@ model User {
   email         String         @unique
   name          String
   password      String?
+  phone         String?
+  company       String?
+  image         String?
   accounts      Account[]
   sessions      Session[]
   role          String         @default("EndUser")
