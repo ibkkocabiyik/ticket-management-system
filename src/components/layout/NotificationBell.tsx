@@ -207,6 +207,7 @@ export function NotificationBell() {
             rounded-xl border border-gray-200 bg-white shadow-xl
             dark:border-gray-700 dark:bg-gray-800
             z-50 overflow-hidden
+            animate-popover-in
           ">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3">
