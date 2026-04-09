@@ -57,9 +57,9 @@ export interface Ticket {
   category: Category;
   comments?: Comment[];
   attachments?: Attachment[];
-  _count?: {
-    comments: number;
-  };
+  _count?: { comments: number };
+  pendingTransferId?: string | null;
+  pendingTransferToName?: string | null;
 }
 
 export interface PaginatedResponse<T> {
