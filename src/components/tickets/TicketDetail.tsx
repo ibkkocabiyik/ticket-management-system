@@ -30,6 +30,7 @@ import {
   UserMinus,
   ArrowRightLeft,
   EyeOff,
+  X,
 } from "lucide-react";
 import type { Status, Priority } from "@/types";
 import Swal from "sweetalert2";
@@ -284,7 +285,16 @@ export function TicketDetail({ ticketId, onClose }: TicketDetailProps) {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute -top-2 right-0 hidden md:flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors z-10"
+          aria-label="Kapat"
+        >
+          <X size={18} />
+        </button>
+      )}
       {!onClose && (
         <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2">
           <ChevronLeft size={16} />
@@ -404,10 +414,18 @@ export function TicketDetail({ ticketId, onClose }: TicketDetailProps) {
                         <UserMinus size={14} />
                         Bırak
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1 gap-2 text-[#6366F1] border-[#6366F1]/30 hover:bg-[#EEF2FF] dark:hover:bg-[#312E81]/20" onClick={() => void handleOpenTransfer()}>
-                        <ArrowRightLeft size={14} />
-                        Devret
-                      </Button>
+                      <div className="relative flex-1 group">
+                        <Button variant="outline" size="sm" className="w-full gap-2 text-[#6366F1] border-[#6366F1]/30 hover:bg-[#EEF2FF] dark:hover:bg-[#312E81]/20 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => void handleOpenTransfer()} disabled={!!ticket.pendingTransferId}>
+                          <ArrowRightLeft size={14} />
+                          Devret
+                        </Button>
+                        {ticket.pendingTransferId && (
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 w-52 rounded-lg bg-gray-900 dark:bg-gray-700 px-3 py-2 text-center text-xs text-white shadow-lg pointer-events-none">
+                            {ticket.pendingTransferToName ? `${ticket.pendingTransferToName} adlı kullanıcıdan onay bekleniyor` : "Onay bekleniyor"}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
