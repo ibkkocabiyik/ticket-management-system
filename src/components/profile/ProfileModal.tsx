@@ -15,7 +15,6 @@ import { Spinner } from "@/components/ui/Spinner";
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  size?: "sm" | "md" | "lg" | "xl" | "2xl";
 }
 
 const profileSchema = z.object({
@@ -44,7 +43,7 @@ const swalTheme = () => ({
 
 type Tab = "profile" | "password";
 
-export function ProfileModal({ isOpen, onClose, size = "lg" }: ProfileModalProps) {
+export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -140,13 +139,13 @@ export function ProfileModal({ isOpen, onClose, size = "lg" }: ProfileModalProps
     : "?";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size={size}>
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
       {isLoading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : (
-        <div className="flex flex-col min-h-0">
+        <div className="flex flex-col">
           {/* Header */}
-          <div className="relative shrink-0 flex items-start justify-between px-6 pt-6 pb-5 border-b border-gray-100 dark:border-gray-700">
+          <div className="relative flex items-start justify-between px-6 pt-6 pb-5 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-4">
               {/* Avatar */}
               <div className="relative shrink-0">
@@ -189,7 +188,7 @@ export function ProfileModal({ isOpen, onClose, size = "lg" }: ProfileModalProps
           </div>
 
           {/* Tabs */}
-          <div className="shrink-0 flex border-b border-gray-100 dark:border-gray-700 px-6">
+          <div className="flex border-b border-gray-100 dark:border-gray-700 px-6">
             {(["profile", "password"] as Tab[]).map((tab) => (
               <button
                 key={tab}
