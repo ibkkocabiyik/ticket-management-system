@@ -1,16 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
 import { TicketList } from "@/components/tickets/TicketList";
-import { TicketDetail } from "@/components/tickets/TicketDetail";
 import { useNewTicket } from "@/context/NewTicketContext";
+import { useTicketDetail } from "@/context/TicketDetailContext";
 
 export default function TicketsPage() {
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const { open: openNewTicket } = useNewTicket();
+  const { openTicket } = useTicketDetail();
 
   return (
     <div className="space-y-4">
@@ -30,21 +28,7 @@ export default function TicketsPage() {
         </Button>
       </div>
 
-      <TicketList onTicketClick={(id) => setSelectedTicketId(id)} />
-
-      {/* Ticket Detay Modal */}
-      <Modal
-        isOpen={!!selectedTicketId}
-        onClose={() => setSelectedTicketId(null)}
-        size="2xl"
-      >
-        {selectedTicketId && (
-          <TicketDetail
-            ticketId={selectedTicketId}
-            onClose={() => setSelectedTicketId(null)}
-          />
-        )}
-      </Modal>
+      <TicketList onTicketClick={openTicket} />
     </div>
   );
 }

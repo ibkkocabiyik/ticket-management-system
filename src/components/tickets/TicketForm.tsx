@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
+import { useTicketDetail } from "@/context/TicketDetailContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
@@ -35,6 +36,7 @@ const swalTheme = () => ({
 
 export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   const router = useRouter();
+  const { openTicket } = useTicketDetail();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: templates, isLoading: templatesLoading } = useTemplates();
   const { mutateAsync: createTicket } = useCreateTicket();
@@ -120,7 +122,8 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
       if (onSuccess) {
         onSuccess(ticket.id);
       } else {
-        router.push(`/tickets/${ticket.id}`);
+        router.push("/tickets");
+        openTicket(ticket.id);
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Talep oluşturulamadı");

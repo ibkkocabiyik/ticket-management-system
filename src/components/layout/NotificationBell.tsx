@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Bell, CheckCheck, X } from "lucide-react";
 import {
   useNotifications,
@@ -9,6 +8,7 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from "@/hooks/useNotifications";
+import { useTicketDetail } from "@/context/TicketDetailContext";
 import { Spinner } from "@/components/ui/Spinner";
 import type { Notification } from "@/types";
 
@@ -38,12 +38,12 @@ function NotificationItem({
   notification: Notification;
   onRead: () => void;
 }) {
-  const router = useRouter();
+  const { openTicket } = useTicketDetail();
 
   const handleClick = () => {
     onRead();
     if (notification.ticketId) {
-      router.push(`/tickets/${notification.ticketId}`);
+      openTicket(notification.ticketId);
     }
   };
 
@@ -96,13 +96,13 @@ function PanelNotificationItem({
   onRead: () => void;
   onClose: () => void;
 }) {
-  const router = useRouter();
+  const { openTicket } = useTicketDetail();
 
   const handleClick = () => {
     onRead();
     if (notification.ticketId) {
       onClose();
-      router.push(`/tickets/${notification.ticketId}`);
+      openTicket(notification.ticketId);
     }
   };
 
