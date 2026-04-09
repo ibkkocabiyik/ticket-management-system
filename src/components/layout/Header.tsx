@@ -169,7 +169,7 @@ export function Header() {
       </header>
 
       {/* Profil Modalı */}
-      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
+      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} size="2xl" />
     </>
   );
 }

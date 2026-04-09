@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, ArrowRight, Ticket, Copy, Check } from "lucide-react";
+import { Mail, Lock, ArrowRight, Ticket, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { loginSchema, type LoginInput } from "@/lib/validations/user";
 import Swal from "sweetalert2";
@@ -133,6 +133,7 @@ function TestHesaplar({ setValue }: { setValue: (field: "email" | "password", va
 
 export function LoginForm() {
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -225,11 +226,19 @@ export function LoginForm() {
             <div className="relative">
               <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/25" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Şifrenizi girin"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20 dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:placeholder-white/25 dark:focus:border-[#6366F1]/60 dark:focus:ring-[#6366F1]/20"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-10 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20 dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:placeholder-white/25 dark:focus:border-[#6366F1]/60 dark:focus:ring-[#6366F1]/20"
                 {...register("password")}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white/50 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
             </div>
             {errors.password && (
               <p className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.password.message}</p>
