@@ -255,6 +255,14 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
   - `src/app/api/users/route.ts` → POST artık Admin ise `role` parametresi kabul ediyor
   - `src/lib/api/users.ts` → `createUser`, `updateUserName`, `deleteUser`, `bulkDeleteUsers` eklendi
 
+- **Bildirim paneli — "Tüm bildirimleri gör" slide-out drawer** — bildirim dropdown'ının altına buton eklendi; tıklandığında sağdan kayan panel açılıyor
+  - `src/components/layout/NotificationBell.tsx` → `PanelNotificationItem` inner component, `formatRelativeTime` helper, `isPanelOpen` state, backdrop + drawer markup, ESC/scroll-lock effect, dropdown footer butonu
+  - `src/hooks/useNotifications.ts` → `useAllNotifications(enabled)` hook eklendi (polling yok, panel açıkken aktif); her iki mutation'a `["notifications", "all"]` invalidation eklendi
+  - `src/lib/api/notifications.ts` → `getNotificationsWithLimit(limit)` fonksiyonu eklendi
+  - `src/app/api/notifications/route.ts` → `GET(request: Request)` ile `?limit=N` query param desteği (1–50 arası kısıtlı)
+  - `tailwind.config.ts` → `slide-in-right` keyframe + animation token eklendi
+  - Panel özellikleri: son 50 bildirim, okunmamışlar indigo sol border, göreceli zaman ("5 dk önce"), "Tümünü okundu işaretle", mobilde tam genişlik / tablet+ 384px
+
 ### ⚠️ Vercel / Production Notları
 - SSE (`/api/notifications/stream`) Vercel'de çalışmaz — serverless'ta kalıcı bağlantı ve in-memory state paylaşımı desteklenmez
 - Bildirimler şu an polling ile çalışıyor (10s interval); ses tetikleme `unreadCount` artışına bağlı
