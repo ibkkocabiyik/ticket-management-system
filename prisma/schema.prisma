@@ -20,11 +20,13 @@ model User {
   sessions      Session[]
   role          String         @default("EndUser")
   createdAt     DateTime       @default(now())
-  tickets       Ticket[]       @relation("CreatedBy")
-  assigned      Ticket[]       @relation("AssignedTo")
-  comments      Comment[]
-  notifications Notification[]
-  ticketHistory TicketHistory[]
+  tickets            Ticket[]          @relation("CreatedBy")
+  assigned           Ticket[]          @relation("AssignedTo")
+  comments           Comment[]
+  notifications      Notification[]
+  ticketHistory      TicketHistory[]
+  transfersFrom      TransferRequest[] @relation("TransferFrom")
+  transfersTo        TransferRequest[] @relation("TransferTo")
 }
 
 model Account {
@@ -93,10 +95,11 @@ model Ticket {
   assignee      User?          @relation("AssignedTo", fields: [assigneeId], references: [id])
   categoryId    String
   category      Category       @relation(fields: [categoryId], references: [id])
-  comments      Comment[]
-  notifications Notification[]
-  history       TicketHistory[]
-  attachments   Attachment[]
+  comments         Comment[]
+  notifications    Notification[]
+  history          TicketHistory[]
+  attachments      Attachment[]
+  transferRequests TransferRequest[]
 }
 
 model Comment {
@@ -125,15 +128,31 @@ model Attachment {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ticketId  String?
-  ticket    Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  type      String
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketId          String?
+  ticket            Ticket?          @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  transferRequestId String?
+  transferRequest   TransferRequest? @relation(fields: [transferRequestId], references: [id], onDelete: Cascade)
+  type              String
+  message           String
+  isRead            Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+}
+
+model TransferRequest {
+  id            String         @id @default(cuid())
+  ticketId      String
+  ticket        Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromUserId    String
+  fromUser      User           @relation("TransferFrom", fields: [fromUserId], references: [id])
+  toUserId      String
+  toUser        User           @relation("TransferTo", fields: [toUserId], references: [id])
+  status        String         @default("pending")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  notifications Notification[]
 }
 
 model TicketHistory {

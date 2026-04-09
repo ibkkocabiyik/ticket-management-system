@@ -5,7 +5,10 @@ type NotificationType =
   | "ticket_created"
   | "comment_added"
   | "status_changed"
-  | "ticket_assigned";
+  | "ticket_assigned"
+  | "transfer_request"
+  | "transfer_approved"
+  | "transfer_rejected";
 
 const STATUS_TR: Record<string, string> = {
   Open: "Açık",
@@ -23,10 +26,11 @@ async function createNotificationForUser(
   userId: string,
   type: NotificationType,
   message: string,
-  ticketId?: string
+  ticketId?: string,
+  transferRequestId?: string
 ) {
   const notification = await prisma.notification.create({
-    data: { userId, type, message, ticketId: ticketId ?? null },
+    data: { userId, type, message, ticketId: ticketId ?? null, transferRequestId: transferRequestId ?? null },
   });
   sendToUser(userId, { type: "notification", notification });
   return notification;
@@ -152,6 +156,54 @@ export async function notifyTicketAssigned(
     Array.from(usersToNotify.entries()).map(([userId, message]) =>
       createNotificationForUser(userId, "ticket_assigned", message, ticketId)
     )
+  );
+}
+
+export async function notifyTransferRequest(
+  ticketId: string,
+  ticketTitle: string,
+  fromUserName: string,
+  toUserId: string,
+  transferRequestId: string
+) {
+  await createNotificationForUser(
+    toUserId,
+    "transfer_request",
+    `${fromUserName}, "${ticketTitle}" talebini size devretmek istiyor. Onaylıyor musunuz?`,
+    ticketId,
+    transferRequestId
+  );
+}
+
+export async function notifyTransferApproved(
+  ticketId: string,
+  ticketTitle: string,
+  toUserName: string,
+  fromUserId: string,
+  transferRequestId: string
+) {
+  await createNotificationForUser(
+    fromUserId,
+    "transfer_approved",
+    `${toUserName}, "${ticketTitle}" talebini devralmayı kabul etti`,
+    ticketId,
+    transferRequestId
+  );
+}
+
+export async function notifyTransferRejected(
+  ticketId: string,
+  ticketTitle: string,
+  toUserName: string,
+  fromUserId: string,
+  transferRequestId: string
+) {
+  await createNotificationForUser(
+    fromUserId,
+    "transfer_rejected",
+    `${toUserName}, "${ticketTitle}" talebini devralmayı reddetti`,
+    ticketId,
+    transferRequestId
   );
 }
 

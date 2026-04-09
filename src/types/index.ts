@@ -116,9 +116,21 @@ export interface Notification {
   id: string;
   userId: string;
   ticketId: string | null;
-  type: "ticket_created" | "comment_added" | "status_changed" | "ticket_assigned";
+  transferRequestId: string | null;
+  type: "ticket_created" | "comment_added" | "status_changed" | "ticket_assigned" | "transfer_request" | "transfer_approved" | "transfer_rejected";
   message: string;
   isRead: boolean;
+  createdAt: string;
+}
+
+export interface TransferRequest {
+  id: string;
+  ticketId: string;
+  fromUserId: string;
+  fromUser: Pick<User, "id" | "name">;
+  toUserId: string;
+  toUser: Pick<User, "id" | "name">;
+  status: "pending" | "approved" | "rejected";
   createdAt: string;
 }
 

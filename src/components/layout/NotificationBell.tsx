@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, CheckCheck, X } from "lucide-react";
+import { Bell, CheckCheck, X, Check, XCircle } from "lucide-react";
 import {
   useNotifications,
   useAllNotifications,
@@ -17,6 +17,9 @@ const TYPE_ICONS: Record<string, string> = {
   comment_added: "💬",
   status_changed: "🔄",
   ticket_assigned: "👤",
+  transfer_request: "🔁",
+  transfer_approved: "✅",
+  transfer_rejected: "❌",
 };
 
 function formatRelativeTime(dateStr: string): string {
@@ -91,14 +94,18 @@ function PanelNotificationItem({
   notification,
   onRead,
   onClose,
+  onRefresh,
 }: {
   notification: Notification;
   onRead: () => void;
   onClose: () => void;
+  onRefresh: () => void;
 }) {
   const { openTicket } = useTicketDetail();
+  const [acting, setActing] = useState(false);
 
   const handleClick = () => {
+    if (notification.type === "transfer_request") return; // butonlarla işleniyor
     onRead();
     if (notification.ticketId) {
       onClose();
@@ -106,38 +113,76 @@ function PanelNotificationItem({
     }
   };
 
+  const handleTransferAction = async (action: "approve" | "reject") => {
+    if (!notification.transferRequestId || !notification.ticketId) return;
+    setActing(true);
+    try {
+      await fetch(`/api/tickets/${notification.ticketId}/transfer/${notification.transferRequestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      onRead();
+      onRefresh();
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const isTransferRequest = notification.type === "transfer_request";
+
   return (
-    <button
-      onClick={handleClick}
-      className={`w-full text-left px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-l-2 ${
+    <div
+      className={`px-5 py-3.5 border-l-2 ${
         !notification.isRead
           ? "border-[#6366F1] bg-[#EEF2FF]/40 dark:bg-[#312E81]/10 dark:border-indigo-500"
           : "border-transparent"
       }`}
     >
-      <div className="flex items-start gap-3">
-        <span className="text-lg leading-none mt-0.5" aria-hidden="true">
-          {TYPE_ICONS[notification.type] ?? "🔔"}
-        </span>
-        <div className="flex-1 min-w-0">
-          <p
-            className={`text-xs leading-relaxed ${
-              !notification.isRead
-                ? "font-medium text-gray-900 dark:text-gray-100"
-                : "text-gray-600 dark:text-gray-400"
-            }`}
-          >
-            {notification.message}
-          </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-            {formatRelativeTime(notification.createdAt)}
-          </p>
+      <button
+        onClick={handleClick}
+        disabled={isTransferRequest}
+        className="w-full text-left hover:opacity-80 transition-opacity disabled:cursor-default"
+      >
+        <div className="flex items-start gap-3">
+          <span className="text-lg leading-none mt-0.5" aria-hidden="true">
+            {TYPE_ICONS[notification.type] ?? "🔔"}
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className={`text-xs leading-relaxed ${!notification.isRead ? "font-medium text-gray-900 dark:text-gray-100" : "text-gray-600 dark:text-gray-400"}`}>
+              {notification.message}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              {formatRelativeTime(notification.createdAt)}
+            </p>
+          </div>
+          {!notification.isRead && !isTransferRequest && (
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#6366F1] dark:bg-indigo-400" />
+          )}
         </div>
-        {!notification.isRead && (
-          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#6366F1] dark:bg-indigo-400" />
-        )}
-      </div>
-    </button>
+      </button>
+
+      {isTransferRequest && !notification.isRead && (
+        <div className="mt-2.5 flex gap-2 pl-7">
+          <button
+            onClick={() => void handleTransferAction("approve")}
+            disabled={acting}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+          >
+            <Check size={11} />
+            Onayla
+          </button>
+          <button
+            onClick={() => void handleTransferAction("reject")}
+            disabled={acting}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+          >
+            <XCircle size={11} />
+            Reddet
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -146,7 +191,7 @@ export function NotificationBell() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { data, isLoading } = useNotifications();
-  const { data: allData, isLoading: allLoading } = useAllNotifications(isPanelOpen);
+  const { data: allData, isLoading: allLoading, refetch: refetchAll } = useAllNotifications(isPanelOpen);
   const { mutate: markRead } = useMarkNotificationRead();
   const { mutate: markAllRead, isPending: isMarkingAll } =
     useMarkAllNotificationsRead();
@@ -355,6 +400,7 @@ export function NotificationBell() {
                       if (!notification.isRead) markRead(notification.id);
                     }}
                     onClose={() => setIsPanelOpen(false)}
+                    onRefresh={() => void refetchAll()}
                   />
                 ))
               )}

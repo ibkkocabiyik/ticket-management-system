@@ -77,9 +77,10 @@ function CommentItem({ comment }: CommentItemProps) {
 
 interface CommentSectionProps {
   ticketId: string;
+  readOnly?: boolean;
 }
 
-export function CommentSection({ ticketId }: CommentSectionProps) {
+export function CommentSection({ ticketId, readOnly = false }: CommentSectionProps) {
   const { data: session } = useSession();
   const { data: comments, isLoading } = useTicketComments(ticketId);
   const { mutateAsync: createComment } = useCreateComment(ticketId);
@@ -137,7 +138,7 @@ export function CommentSection({ ticketId }: CommentSectionProps) {
         </div>
       )}
 
-      {session && (
+      {session && !readOnly && (
         <form onSubmit={handleSubmit} className="mt-4">
           <div className="flex gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
