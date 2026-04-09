@@ -121,13 +121,21 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {title && (
+            {title ? (
               <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
                 <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
                   <X size={20} />
                 </button>
               </div>
+            ) : (
+              <button
+                onClick={onClose}
+                aria-label="Kapat"
+                className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                <X size={18} />
+              </button>
             )}
             <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">{children}</div>
           </div>

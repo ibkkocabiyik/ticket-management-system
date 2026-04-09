@@ -37,7 +37,13 @@ export async function GET(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
-  return NextResponse.json(ticket);
+  // Bekleyen devir isteği var mı?
+  const pendingTransfer = await prisma.transferRequest.findFirst({
+    where: { ticketId: params.id, fromUserId: session.user.id, status: "pending" },
+    select: { id: true, toUser: { select: { name: true } } },
+  });
+
+  return NextResponse.json({ ...ticket, pendingTransferId: pendingTransfer?.id ?? null, pendingTransferToName: pendingTransfer?.toUser.name ?? null });
 }
 
 export async function PATCH(request: NextRequest, { params }: Params) {
