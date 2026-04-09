@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getNotifications,
+  getNotificationsWithLimit,
   markNotificationRead,
   markAllNotificationsRead,
 } from "@/lib/api/notifications";
@@ -52,12 +53,22 @@ export function useNotifications() {
   return query;
 }
 
+export function useAllNotifications(enabled: boolean) {
+  return useQuery({
+    queryKey: ["notifications", "all"],
+    queryFn: () => getNotificationsWithLimit(50),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => markNotificationRead(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications", "all"] });
     },
   });
 }
@@ -68,6 +79,7 @@ export function useMarkAllNotificationsRead() {
     mutationFn: markAllNotificationsRead,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications", "all"] });
     },
   });
 }

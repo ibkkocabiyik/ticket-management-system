@@ -11,6 +11,12 @@ export async function getNotifications(): Promise<NotificationsResponse> {
   return res.json() as Promise<NotificationsResponse>;
 }
 
+export async function getNotificationsWithLimit(limit: number): Promise<NotificationsResponse> {
+  const res = await fetch(`/api/notifications?limit=${limit}`);
+  if (!res.ok) throw new Error("Failed to fetch notifications");
+  return res.json() as Promise<NotificationsResponse>;
+}
+
 export async function markNotificationRead(id: string): Promise<void> {
   const res = await fetch(`/api/notifications/${id}`, { method: "PATCH" });
   if (!res.ok) throw new Error("Failed to mark notification as read");
