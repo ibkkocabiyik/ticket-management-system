@@ -74,9 +74,9 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
 
   return (
     <>
-      {/* Overlay — header'ın altından başlar (mobil: top-14, masaüstü: top-16) */}
+      {/* Overlay */}
       <div
-        className="fixed inset-x-0 bottom-0 top-14 md:top-16 z-50 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm"
         style={{ animation: "__overlay-in 0.2s ease both" }}
         onClick={onClose}
       />
@@ -85,7 +85,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
         /* Mobil: bottom sheet */
         <div
           ref={panelRef}
-          className="fixed bottom-0 inset-x-0 z-50 flex flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-gray-800"
+          className="fixed bottom-0 inset-x-0 z-[201] flex flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-gray-800"
           style={{ maxHeight: "92dvh", animation: "__sheet-up 0.36s cubic-bezier(0.32,0.72,0,1) both" }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -105,9 +105,9 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
         </div>
 
       ) : (
-        /* Masaüstü: header altından başlayan alan içinde ortala */
+        /* Masaüstü: orta */
         <div
-          className="fixed inset-x-0 bottom-0 top-16 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[201] flex items-center justify-center p-4"
           style={{ pointerEvents: "none" }}
         >
           <div
