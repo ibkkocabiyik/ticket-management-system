@@ -78,7 +78,12 @@ function TestHesapSatiri({
 const HESAPLAR = [
   { rol: "Admin", email: "admin@hostpanel.com.tr", sifre: "admin123" },
   { rol: "Destek", email: "teknik1@hostpanel.com.tr", sifre: "support123" },
+  { rol: "Destek", email: "teknik2@hostpanel.com.tr", sifre: "support123" },
+  { rol: "Destek", email: "teknik3@hostpanel.com.tr", sifre: "support123" },
+  { rol: "Destek", email: "teknik4@hostpanel.com.tr", sifre: "support123" },
   { rol: "Kullanıcı", email: "info@digitalmedya.com.tr", sifre: "user123" },
+  { rol: "Kullanıcı", email: "it@novanet.com.tr", sifre: "user123" },
+  { rol: "Kullanıcı", email: "destek@eticaretplus.com", sifre: "user123" },
 ];
 
 function TestHesaplar({ setValue }: { setValue: (field: "email" | "password", value: string) => void }) {
@@ -108,7 +113,7 @@ function TestHesaplar({ setValue }: { setValue: (field: "email" | "password", va
         }}
       >
         <div style={{ overflow: "hidden" }}>
-          <div className="mt-2 space-y-1 rounded-xl bg-gray-50 p-2 dark:bg-gray-700/50">
+          <div className="mt-2 space-y-1 rounded-xl bg-gray-50 p-2 dark:bg-gray-700/50 max-h-52 overflow-y-auto">
             {HESAPLAR.map((hesap, i) => (
               <div
                 key={hesap.rol}
