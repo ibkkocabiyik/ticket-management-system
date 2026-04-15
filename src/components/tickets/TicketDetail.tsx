@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTicket } from "@/hooks/useTicket";
 import { useUpdateTicket, useDeleteTicket } from "@/hooks/useTickets";
 import { StatusBadge, PriorityBadge, Badge } from "@/components/ui/Badge";
@@ -52,6 +53,7 @@ function getSwalTheme() {
 export function TicketDetail({ ticketId, onClose }: TicketDetailProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: ticket, isLoading, isError } = useTicket(ticketId);
   const { mutateAsync: updateTicket, isPending: isUpdating } = useUpdateTicket(ticketId);
   const { mutateAsync: deleteTicket, isPending: isDeleting } = useDeleteTicket();
@@ -267,6 +269,7 @@ export function TicketDetail({ ticketId, onClose }: TicketDetailProps) {
         throw new Error(err.message ?? "Devir isteği gönderilemedi");
       }
       setShowTransferPanel(false);
+      void queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] });
       void Swal.fire({ title: "Gönderildi", text: `${toUserName} kullanıcısına onay isteği gönderildi.`, icon: "success", timer: 2000, showConfirmButton: false, background, color });
     } catch (err) {
       void Swal.fire({ title: "Hata", text: err instanceof Error ? err.message : "Bir hata oluştu", icon: "error", background, color });

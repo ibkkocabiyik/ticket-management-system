@@ -61,8 +61,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
-  // SupportTeam: yalnızca kendine atanmış ticketları düzenleyebilir
-  if (session.user.role === "SupportTeam" && ticket.assigneeId !== session.user.id) {
+  // SupportTeam: başka birine atanmış talebi düzenleyemez; atanmamışsa üstlenebilir
+  if (
+    session.user.role === "SupportTeam" &&
+    ticket.assigneeId !== null &&
+    ticket.assigneeId !== session.user.id
+  ) {
     return NextResponse.json({ message: "Bu talebi düzenleme yetkiniz yok" }, { status: 403 });
   }
 
