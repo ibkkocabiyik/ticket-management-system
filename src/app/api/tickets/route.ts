@@ -100,6 +100,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.role === "SupportTeam") {
+    return NextResponse.json({ message: "Destek ekibi talep oluşturamaz" }, { status: 403 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
