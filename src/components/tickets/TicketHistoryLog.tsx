@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useTicketHistory } from "@/hooks/useTicket";
 import { Spinner } from "@/components/ui/Spinner";
 import type { TicketHistory } from "@/types";
@@ -114,15 +114,18 @@ interface TicketHistoryLogProps {
 
 export function TicketHistoryLog({ ticketId }: TicketHistoryLogProps) {
   const { data: history, isLoading, isError, error } = useTicketHistory(ticketId);
-  // undefined = henüz ilk veri gelmedi (ilk yüklemede animasyon yok)
   const prevFirstIdRef = useRef<string | null | undefined>(undefined);
   const newestId = history?.[0]?.id ?? null;
-  // İlk yüklemede (undefined) animasyon tetiklenmesin; sonraki id değişimlerinde tetiklensin
-  const isNew = prevFirstIdRef.current !== undefined && newestId !== prevFirstIdRef.current;
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (history !== undefined) {
-      prevFirstIdRef.current = newestId;
+    if (history === undefined) return;
+    const isNew = prevFirstIdRef.current !== undefined && newestId !== prevFirstIdRef.current;
+    prevFirstIdRef.current = newestId;
+    if (isNew && newestId) {
+      setHighlightedId(newestId);
+      const t = setTimeout(() => setHighlightedId(null), 4000);
+      return () => clearTimeout(t);
     }
   }, [newestId, history]);
 
@@ -155,10 +158,15 @@ export function TicketHistoryLog({ ticketId }: TicketHistoryLogProps) {
               key={entry.id}
               className={[
                 idx === history.length - 1 ? "[&_.w-px]:hidden" : "",
-                idx === 0 && isNew ? "animate-comment-in" : "",
-              ].join(" ")}
+                entry.id === highlightedId ? "animate-comment-in" : "",
+              ].filter(Boolean).join(" ")}
             >
-              <HistoryItem entry={entry} />
+              <div className={[
+                "rounded-lg transition-colors",
+                entry.id === highlightedId ? "animate-history-highlight" : "",
+              ].filter(Boolean).join(" ")}>
+                <HistoryItem entry={entry} />
+              </div>
             </div>
           ))}
         </div>
