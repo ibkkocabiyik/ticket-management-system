@@ -77,6 +77,18 @@ export async function POST(request: NextRequest, { params }: Params) {
     },
   });
 
+  // Ticket geçmişine yorum kaydı ekle
+  void prisma.ticketHistory.create({
+    data: {
+      ticketId: params.id,
+      userId: session.user.id,
+      action: "comment_added",
+      field: null,
+      oldValue: null,
+      newValue: null,
+    },
+  });
+
   // Fire-and-forget notifications
   void notifyCommentAdded(
     ticket.id,

@@ -52,6 +52,7 @@ export function useCreateComment(ticketId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
       void queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] });
+      void queryClient.invalidateQueries({ queryKey: ["ticket-history", ticketId] });
     },
   });
 }

@@ -13,6 +13,7 @@ const roleLabels: Record<string, string> = {
 
 const actionLabels: Record<string, string> = {
   ticket_created: "Talep oluşturuldu",
+  comment_added: "Yorum yapıldı",
   status_changed: "Durum değiştirildi",
   priority_changed: "Öncelik değiştirildi",
   assignee_changed: "Atanan değiştirildi",
