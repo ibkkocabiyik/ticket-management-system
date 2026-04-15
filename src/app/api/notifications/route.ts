@@ -12,17 +12,20 @@ export async function GET(request: Request) {
   const rawLimit = parseInt(searchParams.get("limit") ?? "30", 10);
   const limit = Math.min(Math.max(rawLimit, 1), 50);
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    select: {
-      id: true, userId: true, ticketId: true, transferRequestId: true,
-      type: true, message: true, isRead: true, createdAt: true,
-    },
-  });
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const [notifications, unreadCount] = await Promise.all([
+    prisma.notification.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true, userId: true, ticketId: true, transferRequestId: true,
+        type: true, message: true, isRead: true, createdAt: true,
+      },
+    }),
+    prisma.notification.count({
+      where: { userId: session.user.id, isRead: false },
+    }),
+  ]);
 
   return NextResponse.json({ notifications, unreadCount });
 }

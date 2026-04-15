@@ -58,7 +58,8 @@ export function useAllNotifications(enabled: boolean) {
     queryKey: ["notifications", "all"],
     queryFn: () => getNotificationsWithLimit(50),
     enabled,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchInterval: enabled ? 10_000 : false,
   });
 }
 

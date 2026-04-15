@@ -117,13 +117,19 @@ function PanelNotificationItem({
     if (!notification.transferRequestId || !notification.ticketId) return;
     setActing(true);
     try {
-      await fetch(`/api/tickets/${notification.ticketId}/transfer/${notification.transferRequestId}`, {
+      const res = await fetch(`/api/tickets/${notification.ticketId}/transfer/${notification.transferRequestId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(err.message ?? "İşlem gerçekleştirilemedi");
+      }
       onRead();
       onRefresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Bir hata oluştu");
     } finally {
       setActing(false);
     }
