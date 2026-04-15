@@ -64,6 +64,10 @@ const config: Config = {
           "0%": { transform: "translateY(-6px) scale(0.97)", opacity: "0" },
           "100%": { transform: "translateY(0) scale(1)", opacity: "1" },
         },
+        "comment-in": {
+          "0%": { transform: "translateY(10px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
       },
       animation: {
         "slide-up": "slide-up 0.3s cubic-bezier(0.32,0.72,0,1)",
@@ -72,6 +76,7 @@ const config: Config = {
         "slide-in-fade-in": "slideInFadeIn 0.4s ease-out forwards",
         "slide-in-right": "slide-in-right 0.3s cubic-bezier(0.32,0.72,0,1) both",
         "popover-in": "popover-in 0.15s cubic-bezier(0.16,1,0.3,1) both",
+        "comment-in": "comment-in 0.25s cubic-bezier(0.16,1,0.3,1) both",
       },
     },
   },

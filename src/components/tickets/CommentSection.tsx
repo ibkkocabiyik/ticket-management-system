@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useTicketComments, useCreateComment } from "@/hooks/useTicket";
 import { Spinner } from "@/components/ui/Spinner";
@@ -88,6 +88,8 @@ export function CommentSection({ ticketId, readOnly = false }: CommentSectionPro
   const [contentError, setContentError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const [editorKey, setEditorKey] = useState(0);
+  const newestCommentId = useRef<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,9 +101,11 @@ export function CommentSection({ ticketId, readOnly = false }: CommentSectionPro
     setContentError(null);
     setIsSubmitting(true);
     try {
-      await createComment({ content, files: files.length > 0 ? files : undefined });
+      const comment = await createComment({ content, files: files.length > 0 ? files : undefined });
+      newestCommentId.current = comment.id;
       setContent("");
       setFiles([]);
+      setEditorKey((k) => k + 1); // TipTap'ı sıfırla
     } catch (error) {
       setContentError(error instanceof Error ? error.message : "Yorum gönderilemedi");
     } finally {
@@ -132,7 +136,12 @@ export function CommentSection({ ticketId, readOnly = false }: CommentSectionPro
             </div>
           ) : (
             (comments as Comment[]).map((comment) => (
-              <CommentItem key={comment.id} comment={comment} />
+              <div
+                key={comment.id}
+                className={comment.id === newestCommentId.current ? "animate-comment-in" : ""}
+              >
+                <CommentItem comment={comment} />
+              </div>
             ))
           )}
         </div>
@@ -148,6 +157,7 @@ export function CommentSection({ ticketId, readOnly = false }: CommentSectionPro
             </div>
             <div className="flex-1">
               <RichTextEditor
+                key={editorKey}
                 value={content}
                 onChange={(html) => {
                   setContent(html);
