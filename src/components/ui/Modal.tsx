@@ -76,7 +76,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-black/50"
         style={{ animation: "__overlay-in 0.2s ease both" }}
         onClick={onClose}
       />
