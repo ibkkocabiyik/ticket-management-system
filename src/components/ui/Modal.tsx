@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -72,7 +73,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
     xl: "max-w-xl", "2xl": "max-w-6xl",
   };
 
-  return (
+  return createPortal(
     <>
       {/* Overlay */}
       <div
@@ -145,6 +146,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }
