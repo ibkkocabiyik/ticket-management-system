@@ -74,9 +74,9 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay — header'ın altından başlar (mobil: top-14, masaüstü: top-16) */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-x-0 bottom-0 top-14 md:top-16 z-50 bg-black/50 backdrop-blur-sm"
         style={{ animation: "__overlay-in 0.2s ease both" }}
         onClick={onClose}
       />
@@ -105,9 +105,9 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
         </div>
 
       ) : (
-        /* Masaüstü: orta */
+        /* Masaüstü: header altından başlayan alan içinde ortala */
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[5vh]"
+          className="fixed inset-x-0 bottom-0 top-16 z-50 flex items-center justify-center p-4"
           style={{ pointerEvents: "none" }}
         >
           <div
@@ -118,7 +118,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
             )}
             style={{
               pointerEvents: "auto",
-              maxHeight: "90dvh",
+              maxHeight: "90vh",
               display: "flex",
               flexDirection: "column",
               animation: "__modal-pop 0.3s cubic-bezier(0.34,1.4,0.64,1) both",
