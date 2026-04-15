@@ -47,23 +47,34 @@ function formatDate(iso: string): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-function HistoryItem({ entry }: { entry: TicketHistory }) {
+function HistoryItem({ entry, isHighlighted }: { entry: TicketHistory; isHighlighted?: boolean }) {
   const isCreated = entry.action === "ticket_created";
 
   return (
     <div className="flex gap-3">
       {/* Timeline dot */}
       <div className="flex flex-col items-center">
-        <div className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 ${
-          isCreated
-            ? "border-blue-500 bg-blue-500"
-            : "border-gray-400 bg-white dark:border-gray-500 dark:bg-gray-800"
-        }`} />
+        <div className="relative mt-1 flex items-center justify-center">
+          {isHighlighted && (
+            <span className="absolute inline-flex h-4 w-4 rounded-full bg-[#6366F1]/40 animate-ping" />
+          )}
+          <div className={`h-2.5 w-2.5 shrink-0 rounded-full border-2 transition-colors duration-300 ${
+            isHighlighted
+              ? "border-[#6366F1] bg-[#6366F1]"
+              : isCreated
+                ? "border-blue-500 bg-blue-500"
+                : "border-gray-400 bg-white dark:border-gray-500 dark:bg-gray-800"
+          }`} />
+        </div>
         <div className="w-px flex-1 bg-gray-200 dark:bg-gray-700" />
       </div>
 
       {/* Content */}
-      <div className="pb-4 flex-1 min-w-0">
+      <div className={`pb-4 flex-1 min-w-0 pl-1 border-l-2 transition-colors duration-700 ${
+        isHighlighted
+          ? "border-[#6366F1]/50"
+          : "border-transparent"
+      }`}>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
             {entry.user.name}
@@ -161,12 +172,7 @@ export function TicketHistoryLog({ ticketId }: TicketHistoryLogProps) {
                 entry.id === highlightedId ? "animate-comment-in" : "",
               ].filter(Boolean).join(" ")}
             >
-              <div className={[
-                "rounded-lg transition-colors",
-                entry.id === highlightedId ? "animate-history-highlight" : "",
-              ].filter(Boolean).join(" ")}>
-                <HistoryItem entry={entry} />
-              </div>
+              <HistoryItem entry={entry} isHighlighted={entry.id === highlightedId} />
             </div>
           ))}
         </div>
