@@ -57,6 +57,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"tickets" | "summary">("tickets");
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const { open: openNewTicket } = useNewTicket();
+  const canCreate = session?.user?.role !== "SupportTeam";
 
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["dashboard-stats"],
@@ -101,13 +102,14 @@ export default function DashboardPage() {
               Özet
             </button>
           </div>
-          {/* Mobilde Yeni Talep butonu — BottomNav'daki + butonu da var ama burada da olsun */}
-          <Button className="gap-1.5 md:gap-2 text-xs md:text-sm px-3 md:px-4" onClick={openNewTicket}>
-            <PlusCircle size={14} className="md:hidden" />
-            <PlusCircle size={16} className="hidden md:block" />
-            <span className="hidden sm:inline">Yeni Talep</span>
-            <span className="sm:hidden">Yeni</span>
-          </Button>
+          {canCreate && (
+            <Button className="gap-1.5 md:gap-2 text-xs md:text-sm px-3 md:px-4" onClick={openNewTicket}>
+              <PlusCircle size={14} className="md:hidden" />
+              <PlusCircle size={16} className="hidden md:block" />
+              <span className="hidden sm:inline">Yeni Talep</span>
+              <span className="sm:hidden">Yeni</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -142,12 +144,14 @@ export default function DashboardPage() {
                     Hızlı İşlemler
                   </h2>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <button onClick={openNewTicket} className="text-left">
-                      <div className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 p-3 transition-colors hover:border-[#6366F1]/20 hover:bg-[#EEF2FF] dark:border-gray-700 dark:hover:border-[#6366F1]/30 dark:hover:bg-[#312E81]/20">
-                        <PlusCircle size={20} className="text-[#6366F1]" />
-                        <span className="text-sm font-medium text-gray-700 hover:text-[#6366F1] dark:text-gray-300">Yeni Talep Oluştur</span>
-                      </div>
-                    </button>
+                    {canCreate && (
+                      <button onClick={openNewTicket} className="text-left">
+                        <div className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 p-3 transition-colors hover:border-[#6366F1]/20 hover:bg-[#EEF2FF] dark:border-gray-700 dark:hover:border-[#6366F1]/30 dark:hover:bg-[#312E81]/20">
+                          <PlusCircle size={20} className="text-[#6366F1]" />
+                          <span className="text-sm font-medium text-gray-700 hover:text-[#6366F1] dark:text-gray-300">Yeni Talep Oluştur</span>
+                        </div>
+                      </button>
+                    )}
                     <Link href="/tickets?status=Open">
                       <div className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 p-3 transition-colors hover:border-[#6366F1]/20 hover:bg-[#EEF2FF] dark:border-gray-700 dark:hover:border-[#6366F1]/30 dark:hover:bg-[#312E81]/20">
                         <AlertCircle size={20} className="text-amber-500" />

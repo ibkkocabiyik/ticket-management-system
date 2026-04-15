@@ -36,14 +36,16 @@ export function BottomNav({ role }: BottomNavProps) {
           <span className="text-[10px] font-medium">Talepler</span>
         </Link>
 
-        <button
-          onClick={openNewTicket}
-          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#6366F1] shadow-md transition-transform active:scale-95">
-            <PlusCircle size={20} className="text-white" />
-          </div>
-        </button>
+        {role !== "SupportTeam" && (
+          <button
+            onClick={openNewTicket}
+            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#6366F1] shadow-md transition-transform active:scale-95">
+              <PlusCircle size={20} className="text-white" />
+            </div>
+          </button>
+        )}
 
         {role === "Admin" && (
           <>
