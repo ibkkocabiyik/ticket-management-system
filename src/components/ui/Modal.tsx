@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -17,44 +17,48 @@ interface ModalProps {
   size?: "sm" | "md" | "lg" | "xl" | "2xl";
 }
 
-const KEYFRAMES = `
-@keyframes __overlay-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+// Style tag'i bir kez DOM'a eklenir, her render'da inject edilmez
+if (typeof document !== "undefined") {
+  const id = "__modal-keyframes";
+  if (!document.getElementById(id)) {
+    const s = document.createElement("style");
+    s.id = id;
+    s.textContent = `
+      @keyframes __overlay-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes __modal-pop {
+        0%   { opacity: 0; transform: translateY(8px) scale(0.97); }
+        100% { opacity: 1; transform: translateY(0)  scale(1); }
+      }
+      @keyframes __sheet-up {
+        0%   { opacity: 0; transform: translateY(100%); }
+        65%  { transform: translateY(-4px); }
+        82%  { transform: translateY(2px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+    `;
+    document.head.appendChild(s);
+  }
 }
-@keyframes __modal-pop {
-  0%   { opacity: 0; transform: scale(0.88); }
-  60%  { opacity: 1; transform: scale(1.03); }
-  80%  { transform: scale(0.98); }
-  100% { opacity: 1; transform: scale(1); }
-}
-@keyframes __sheet-up {
-  0%   { opacity: 0; transform: translateY(100%); }
-  65%  { transform: translateY(-5px); }
-  82%  { transform: translateY(3px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-`;
 
 export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalProps) {
-  const [isMobile, setIsMobile] = useState(false);
+  // isMobile'ı doğrudan window'dan oku — useState(false) ilk render flaşını önler
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
   const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    setIsMobile(mq.matches);
-    const h = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", h);
-    return () => mq.removeEventListener("change", h);
-  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
     const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onEsc);
+    // Scrollbar kaymasını önle: scrollbar genişliği kadar padding ekle
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onEsc);
+      document.body.style.paddingRight = "";
       document.body.style.overflow = "";
     };
   }, [isOpen, onClose]);
@@ -68,8 +72,6 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
 
   return (
     <>
-      <style>{KEYFRAMES}</style>
-
       {/* Overlay */}
       <div
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
