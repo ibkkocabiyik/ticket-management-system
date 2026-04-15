@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useTicketHistory } from "@/hooks/useTicket";
 import { Spinner } from "@/components/ui/Spinner";
 import type { TicketHistory } from "@/types";
@@ -114,10 +114,17 @@ interface TicketHistoryLogProps {
 
 export function TicketHistoryLog({ ticketId }: TicketHistoryLogProps) {
   const { data: history, isLoading, isError, error } = useTicketHistory(ticketId);
-  const prevFirstIdRef = useRef<string | null>(null);
+  // undefined = henüz ilk veri gelmedi (ilk yüklemede animasyon yok)
+  const prevFirstIdRef = useRef<string | null | undefined>(undefined);
   const newestId = history?.[0]?.id ?? null;
-  const isNew = newestId !== null && newestId !== prevFirstIdRef.current;
-  if (newestId !== prevFirstIdRef.current) prevFirstIdRef.current = newestId;
+  // İlk yüklemede (undefined) animasyon tetiklenmesin; sonraki id değişimlerinde tetiklensin
+  const isNew = prevFirstIdRef.current !== undefined && newestId !== prevFirstIdRef.current;
+
+  useEffect(() => {
+    if (history !== undefined) {
+      prevFirstIdRef.current = newestId;
+    }
+  }, [newestId, history]);
 
   return (
     <div>
