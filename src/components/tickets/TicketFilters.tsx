@@ -15,9 +15,12 @@ import {
 interface TicketFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
+  isSupport?: boolean;
+  showAll?: boolean;
+  onShowAllChange?: (showAll: boolean) => void;
 }
 
-export function TicketFilters({ filters, onFiltersChange }: TicketFiltersProps) {
+export function TicketFilters({ filters, onFiltersChange, isSupport, showAll = true, onShowAllChange }: TicketFiltersProps) {
   const { data: categories } = useCategories();
 
   const handleReset = () => {
@@ -172,6 +175,30 @@ export function TicketFilters({ filters, onFiltersChange }: TicketFiltersProps) 
             <SelectItem value="priority_asc">Öncelik (Düşük)</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Tüm Talepleri Göster — sadece SupportTeam */}
+        {isSupport && (
+          <label className="flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 transition-colors hover:border-[#6366F1]/40 hover:bg-[#EEF2FF] hover:text-[#6366F1] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-[#6366F1]/40 dark:hover:bg-[#312E81]/20 dark:hover:text-indigo-300 select-none">
+            <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+              showAll
+                ? "border-[#6366F1] bg-[#6366F1]"
+                : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
+            }`}>
+              {showAll && (
+                <svg viewBox="0 0 10 8" className="h-2.5 w-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 4l2.5 2.5L9 1" />
+                </svg>
+              )}
+            </div>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={showAll}
+              onChange={(e) => onShowAllChange?.(e.target.checked)}
+            />
+            Tüm Talepleri Göster
+          </label>
+        )}
 
         {/* Sıfırla */}
         {activeFilterCount > 0 && (

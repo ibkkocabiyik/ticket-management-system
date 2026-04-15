@@ -79,6 +79,7 @@ export interface TicketFilters {
   pageSize?: number;
   sortBy?: "createdAt" | "priority" | "updatedAt";
   sortOrder?: "asc" | "desc";
+  assignedToMe?: boolean;
 }
 
 export interface DashboardStats {

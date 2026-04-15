@@ -29,12 +29,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { status, priority, categoryId, search, page, pageSize, sortBy, sortOrder } = parsed.data;
+  const { status, priority, categoryId, search, page, pageSize, sortBy, sortOrder, assignedToMe } = parsed.data;
 
   const where: Record<string, unknown> = {};
 
   if (session.user.role === "EndUser") {
     where.creatorId = session.user.id;
+  }
+
+  if (session.user.role === "SupportTeam" && assignedToMe) {
+    where.assigneeId = session.user.id;
   }
 
   if (status) where.status = status;

@@ -11,6 +11,7 @@ function buildQueryString(filters: TicketFilters): string {
   if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
   if (filters.sortBy) params.set("sortBy", filters.sortBy);
   if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
+  if (filters.assignedToMe) params.set("assignedToMe", "true");
   return params.toString();
 }
 

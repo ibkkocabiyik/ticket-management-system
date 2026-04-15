@@ -40,6 +40,7 @@ export const ticketFiltersSchema = z.object({
   pageSize: z.coerce.number().min(1).max(100).default(10),
   sortBy: z.enum(["createdAt", "priority", "updatedAt"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  assignedToMe: z.coerce.boolean().optional(),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;

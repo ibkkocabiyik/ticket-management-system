@@ -48,6 +48,8 @@ export function TicketList({ onTicketClick }: TicketListProps) {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "Admin";
 
+  const isSupport = session?.user?.role === "SupportTeam";
+
   const [filters, setFilters] = useState<Filters>({
     page: 1,
     pageSize: 10,
@@ -57,8 +59,14 @@ export function TicketList({ onTicketClick }: TicketListProps) {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
+  const [showAll, setShowAll] = useState(true);
 
-  const { data, isLoading, isError } = useTickets(filters);
+  const effectiveFilters: Filters = {
+    ...filters,
+    assignedToMe: isSupport && !showAll ? true : undefined,
+  };
+
+  const { data, isLoading, isError } = useTickets(effectiveFilters);
   const { lastCreatedId, setLastCreatedId } = useNewTicket();
   const { mutateAsync: bulkAction, isPending } = useBulkTicketAction();
 
@@ -166,7 +174,13 @@ export function TicketList({ onTicketClick }: TicketListProps) {
 
   return (
     <div className="space-y-4">
-      <TicketFilters filters={filters} onFiltersChange={setFilters} />
+      <TicketFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        isSupport={isSupport}
+        showAll={showAll}
+        onShowAllChange={setShowAll}
+      />
 
       {/* Admin — çoklu seçim */}
       {isAdmin && (
