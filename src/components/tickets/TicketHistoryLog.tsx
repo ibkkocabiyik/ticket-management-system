@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useTicketHistory } from "@/hooks/useTicket";
 import { Spinner } from "@/components/ui/Spinner";
 import type { TicketHistory } from "@/types";
@@ -113,6 +114,10 @@ interface TicketHistoryLogProps {
 
 export function TicketHistoryLog({ ticketId }: TicketHistoryLogProps) {
   const { data: history, isLoading, isError, error } = useTicketHistory(ticketId);
+  const prevFirstIdRef = useRef<string | null>(null);
+  const newestId = history?.[0]?.id ?? null;
+  const isNew = newestId !== null && newestId !== prevFirstIdRef.current;
+  if (newestId !== prevFirstIdRef.current) prevFirstIdRef.current = newestId;
 
   return (
     <div>
@@ -139,7 +144,13 @@ export function TicketHistoryLog({ ticketId }: TicketHistoryLogProps) {
       ) : (
         <div className="space-y-0">
           {history.map((entry, idx) => (
-            <div key={entry.id} className={idx === history.length - 1 ? "[&_.w-px]:hidden" : ""}>
+            <div
+              key={entry.id}
+              className={[
+                idx === history.length - 1 ? "[&_.w-px]:hidden" : "",
+                idx === 0 && isNew ? "animate-comment-in" : "",
+              ].join(" ")}
+            >
               <HistoryItem entry={entry} />
             </div>
           ))}
