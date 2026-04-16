@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "TicketSystem v.01",
   description: "Manage support tickets efficiently",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
