@@ -8,7 +8,8 @@ type NotificationType =
   | "ticket_assigned"
   | "transfer_request"
   | "transfer_approved"
-  | "transfer_rejected";
+  | "transfer_rejected"
+  | "admin_action";
 
 const STATUS_TR: Record<string, string> = {
   Open: "Açık",
@@ -204,6 +205,21 @@ export async function notifyTransferRejected(
     `${toUserName}, "${ticketTitle}" talebini devralmayı reddetti`,
     ticketId,
     transferRequestId
+  );
+}
+
+export async function notifyAdminAction(
+  ticketId: string,
+  ticketTitle: string,
+  adminName: string,
+  actionDescription: string,
+  assigneeId: string
+) {
+  await createNotificationForUser(
+    assigneeId,
+    "admin_action",
+    `[Admin İşlemi] ${adminName} — ${actionDescription}: "${ticketTitle}"`,
+    ticketId
   );
 }
 

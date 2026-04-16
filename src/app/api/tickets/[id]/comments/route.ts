@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createCommentSchema } from "@/lib/validations/comment";
-import { notifyCommentAdded } from "@/lib/notifications";
+import { notifyCommentAdded, notifyAdminAction } from "@/lib/notifications";
 
 interface Params {
   params: { id: string };
@@ -24,10 +24,17 @@ export async function GET(_request: NextRequest, { params }: Params) {
   }
 
   const comments = await prisma.comment.findMany({
-    where: { ticketId: params.id },
+    where: { ticketId: params.id, parentCommentId: null },
     include: {
       author: { select: { id: true, name: true, email: true, role: true } },
       attachments: true,
+      replies: {
+        include: {
+          author: { select: { id: true, name: true, email: true, role: true } },
+          attachments: true,
+        },
+        orderBy: { createdAt: "asc" },
+      },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -70,6 +77,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       content: parsed.data.content,
       authorId: session.user.id,
       ticketId: params.id,
+      parentCommentId: parsed.data.parentCommentId ?? null,
     },
     include: {
       author: { select: { id: true, name: true, email: true, role: true } },
@@ -95,6 +103,11 @@ export async function POST(request: NextRequest, { params }: Params) {
     ticket.assigneeId,
     session.user.id
   );
+
+  // Admin yanıtı ise atanan destek kullanıcısına özel bildirim
+  if (parsed.data.parentCommentId && session.user.role === "Admin" && ticket.assigneeId) {
+    void notifyAdminAction(ticket.id, ticket.title, session.user.name, "bir yoruma yanıt verdi", ticket.assigneeId);
+  }
 
   return NextResponse.json(comment, { status: 201 });
 }

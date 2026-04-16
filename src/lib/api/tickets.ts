@@ -103,6 +103,27 @@ export async function createComment(ticketId: string, content: string) {
   return res.json();
 }
 
+export async function deleteComment(ticketId: string, commentId: string): Promise<void> {
+  const res = await fetch(`/api/tickets/${ticketId}/comments/${commentId}`, { method: "DELETE" });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(error.message ?? "Yorum silinemedi");
+  }
+}
+
+export async function createReply(ticketId: string, content: string, parentCommentId: string) {
+  const res = await fetch(`/api/tickets/${ticketId}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content, parentCommentId }),
+  });
+  if (!res.ok) {
+    const error = await res.json() as { message?: string };
+    throw new Error(error.message ?? "Yanıt gönderilemedi");
+  }
+  return res.json();
+}
+
 export async function uploadAttachment(
   file: File,
   target: { ticketId: string } | { commentId: string }

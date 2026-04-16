@@ -103,14 +103,17 @@ model Ticket {
 }
 
 model Comment {
-  id          String       @id @default(cuid())
-  content     String
-  createdAt   DateTime     @default(now())
-  authorId    String
-  author      User         @relation(fields: [authorId], references: [id])
-  ticketId    String
-  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  attachments Attachment[]
+  id              String       @id @default(cuid())
+  content         String
+  createdAt       DateTime     @default(now())
+  authorId        String
+  author          User         @relation(fields: [authorId], references: [id])
+  ticketId        String
+  ticket          Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  attachments     Attachment[]
+  parentCommentId String?
+  parentComment   Comment?     @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[]    @relation("CommentReplies")
 }
 
 model Attachment {

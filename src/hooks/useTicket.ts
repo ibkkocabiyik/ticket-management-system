@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTicket, getTicketComments, createComment, uploadAttachment } from "@/lib/api/tickets";
+import { getTicket, getTicketComments, createComment, createReply, deleteComment, uploadAttachment } from "@/lib/api/tickets";
 import type { TicketHistory } from "@/types";
 
 export function useTicket(id: string) {
@@ -34,6 +34,32 @@ export function useTicketHistory(ticketId: string) {
     enabled: !!ticketId,
     staleTime: 0,
     retry: 1,
+  });
+}
+
+export function useDeleteComment(ticketId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) => deleteComment(ticketId, commentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
+    },
+  });
+}
+
+export function useReplyComment(ticketId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ content, parentCommentId, files }: { content: string; parentCommentId: string; files?: File[] }) => {
+      const comment = await createReply(ticketId, content, parentCommentId);
+      if (files?.length) {
+        await Promise.allSettled(files.map((f) => uploadAttachment(f, { commentId: comment.id })));
+      }
+      return comment;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["ticket-comments", ticketId] });
+    },
   });
 }
 

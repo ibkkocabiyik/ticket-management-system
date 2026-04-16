@@ -276,6 +276,55 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
 - Bildirimler şu an polling ile çalışıyor (10s interval); ses tetikleme `unreadCount` artışına bağlı
 - Dosya yükleme (`public/uploads/`) Vercel'de kalıcı değil — ileride S3/Cloudflare R2'ye taşınmalı
 
+- **Modal `createPortal` mimarisine taşındı** — `src/components/ui/Modal.tsx`
+  - `createPortal(content, document.body)` ile layout stacking context'inden bağımsız hale getirildi
+  - Overlay + modal container `z-[200]/z-[201]`; SelectContent `z-[300]` (modal içi dropdown için)
+  - Scrollbar layout shift fix: `paddingRight = scrollbarWidth` + `overflow: hidden`
+  - `isMobile`: `window.matchMedia` doğrudan okunuyor (useState flash'ı önler)
+  - Keyframe'ler `document.createElement("style")` ile bir kez inject ediliyor
+
+- **SupportTeam talep oluşturamaz** — API 403 + tüm UI giriş noktaları gizlendi
+  - `src/app/api/tickets/route.ts` POST → SupportTeam 403
+  - Sidebar, BottomNav, dashboard, tickets page: `role !== "SupportTeam"` koşulu
+
+- **Talep devir (Transfer) sistemi tamamlandı**
+  - Devret butonu: `ticket.pendingTransferId` varsa disabled + inline amber mesaj
+  - X butonu Modal.tsx'e taşındı (title yoksa `absolute top-3 right-3`)
+  - Claim 403 fix: `assigneeId !== null && assigneeId !== session.user.id` kontrolü
+  - Transfer invalidation: `void queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] })`
+
+- **Yorum geçmişe ekleniyor** — `await prisma.ticketHistory.create(...)` (void değil, Vercel için)
+
+- **TipTap yorum sonrası reset** — `editorKey` state, her submit sonrası `setEditorKey(k => k+1)` ile remount
+
+- **Yorum + Geçmiş animasyonları**
+  - Yeni yorum: `animate-comment-in` (slide-up + fade)
+  - Geçmiş yeni kayıt: 4 sn highlight — dot ping + `border-l-2 border-[#6366F1]/50`
+  - `tailwind.config.ts`'e `comment-in` ve `history-highlight` keyframe'leri eklendi
+
+- **TicketHistoryLog — ilk 5 kayıt + toggle** — 5'ten fazlaysa "X kayıt daha göster" butonu
+
+- **TicketDetail mobil sıralaması** — mobilde içerik + yorumlar önce (`order-1`), sidebar sonra (`order-2`)
+
+- **Favicon** — `public/favicon.png` + `src/app/icon.png` (mor T logosu); `layout.tsx`'e `icons` metadata eklendi
+
+- **Login test hesapları** — `src/components/auth/LoginForm.tsx` HESAPLAR array tüm 8 seed kullanıcıyı içeriyor; panel `max-h-52 overflow-y-auto`
+
+- **SupportTeam "Tüm Talepleri Göster" filtresi**
+  - `src/components/tickets/TicketFilters.tsx` → `isSupport`, `showAll`, `onShowAllChange` props
+  - `src/components/tickets/TicketList.tsx` → `effectiveFilters = { assignedToMe: isSupport && !showAll ? true : undefined }`
+  - `src/app/api/tickets/route.ts` GET → `assignedToMe` query param desteği
+
+- **Admin yorum silme + yanıtlama + admin_action bildirimi**
+  - `prisma/schema.prisma` → Comment modeline `parentCommentId` self-relation (`"CommentReplies"`, `onDelete: Cascade`)
+  - `src/app/api/tickets/[id]/comments/route.ts` → GET: `parentCommentId: null` filtresi + `replies` include; POST: `parentCommentId` desteği + admin yanıt bildirimi
+  - `src/app/api/tickets/[id]/comments/[commentId]/route.ts` → **yeni**, DELETE (Admin-only, 204)
+  - `src/lib/notifications.ts` → `notifyAdminAction()` helper, `"admin_action"` NotificationType
+  - `src/lib/api/tickets.ts` → `deleteComment()`, `createReply()` fonksiyonları
+  - `src/hooks/useTicket.ts` → `useDeleteComment`, `useReplyComment` mutation hook'ları
+  - `src/components/tickets/CommentSection.tsx` → Sil/Yanıtla butonları (admin-only), inline reply editor, nested replies (girintili, sol border)
+  - `src/components/layout/NotificationBell.tsx` → `NotificationIcon` helper, `admin_action` turuncu tema (border, arka plan, bold yazı, ShieldAlert ikonu) — hem dropdown hem slide-out panelde
+
 ### Sıradaki
 
 **Bildirim Sesi (bekleyen)**

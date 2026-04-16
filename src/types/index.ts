@@ -39,6 +39,8 @@ export interface Comment {
   author: Pick<User, "id" | "name" | "email" | "role">;
   ticketId: string;
   attachments?: Attachment[];
+  parentCommentId?: string | null;
+  replies?: Comment[];
 }
 
 export interface Ticket {
@@ -118,7 +120,7 @@ export interface Notification {
   userId: string;
   ticketId: string | null;
   transferRequestId: string | null;
-  type: "ticket_created" | "comment_added" | "status_changed" | "ticket_assigned" | "transfer_request" | "transfer_approved" | "transfer_rejected";
+  type: "ticket_created" | "comment_added" | "status_changed" | "ticket_assigned" | "transfer_request" | "transfer_approved" | "transfer_rejected" | "admin_action";
   message: string;
   isRead: boolean;
   createdAt: string;

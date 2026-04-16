@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, CheckCheck, X, Check, XCircle } from "lucide-react";
+import { Bell, CheckCheck, X, Check, XCircle, ShieldAlert } from "lucide-react";
 import {
   useNotifications,
   useAllNotifications,
@@ -12,7 +12,7 @@ import { useTicketDetail } from "@/context/TicketDetailContext";
 import { Spinner } from "@/components/ui/Spinner";
 import type { Notification } from "@/types";
 
-const TYPE_ICONS: Record<string, string> = {
+const EMOJI_ICONS: Record<string, string> = {
   ticket_created: "🎫",
   comment_added: "💬",
   status_changed: "🔄",
@@ -21,6 +21,21 @@ const TYPE_ICONS: Record<string, string> = {
   transfer_approved: "✅",
   transfer_rejected: "❌",
 };
+
+function NotificationIcon({ type, large = false }: { type: string; large?: boolean }) {
+  if (type === "admin_action") {
+    return (
+      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
+        <ShieldAlert size={large ? 14 : 12} className="text-orange-600 dark:text-orange-400" />
+      </span>
+    );
+  }
+  return (
+    <span className={`${large ? "text-lg" : "text-base"} leading-none mt-0.5 shrink-0`} aria-hidden="true">
+      {EMOJI_ICONS[type] ?? "🔔"}
+    </span>
+  );
+}
 
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -59,21 +74,23 @@ function NotificationItem({
     <button
       onClick={handleClick}
       className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-        !notification.isRead
-          ? "bg-[#EEF2FF]/60 dark:bg-[#312E81]/10"
-          : ""
+        notification.type === "admin_action"
+          ? "bg-orange-50/70 dark:bg-orange-900/10 border-l-2 border-orange-400 dark:border-orange-500"
+          : !notification.isRead
+            ? "bg-[#EEF2FF]/60 dark:bg-[#312E81]/10"
+            : ""
       }`}
     >
       <div className="flex items-start gap-3">
-        <span className="text-base leading-none mt-0.5" aria-hidden="true">
-          {TYPE_ICONS[notification.type] ?? "🔔"}
-        </span>
+        <NotificationIcon type={notification.type} />
         <div className="flex-1 min-w-0">
           <p
             className={`text-xs leading-relaxed ${
-              !notification.isRead
-                ? "font-medium text-gray-900 dark:text-gray-100"
-                : "text-gray-600 dark:text-gray-400"
+              notification.type === "admin_action"
+                ? "font-semibold text-orange-700 dark:text-orange-400"
+                : !notification.isRead
+                  ? "font-medium text-gray-900 dark:text-gray-100"
+                  : "text-gray-600 dark:text-gray-400"
             }`}
           >
             {notification.message}
@@ -83,7 +100,7 @@ function NotificationItem({
           </p>
         </div>
         {!notification.isRead && (
-          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#6366F1]" />
+          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.type === "admin_action" ? "bg-orange-500" : "bg-[#6366F1]"}`} />
         )}
       </div>
     </button>
@@ -140,9 +157,11 @@ function PanelNotificationItem({
   return (
     <div
       className={`px-5 py-3.5 border-l-2 ${
-        !notification.isRead
-          ? "border-[#6366F1] bg-[#EEF2FF]/40 dark:bg-[#312E81]/10 dark:border-indigo-500"
-          : "border-transparent"
+        notification.type === "admin_action"
+          ? "border-orange-400 dark:border-orange-500 bg-orange-50/50 dark:bg-orange-900/10"
+          : !notification.isRead
+            ? "border-[#6366F1] bg-[#EEF2FF]/40 dark:bg-[#312E81]/10 dark:border-indigo-500"
+            : "border-transparent"
       }`}
     >
       <button
@@ -151,11 +170,15 @@ function PanelNotificationItem({
         className="w-full text-left hover:opacity-80 transition-opacity disabled:cursor-default"
       >
         <div className="flex items-start gap-3">
-          <span className="text-lg leading-none mt-0.5" aria-hidden="true">
-            {TYPE_ICONS[notification.type] ?? "🔔"}
-          </span>
+          <NotificationIcon type={notification.type} large />
           <div className="flex-1 min-w-0">
-            <p className={`text-xs leading-relaxed ${!notification.isRead ? "font-medium text-gray-900 dark:text-gray-100" : "text-gray-600 dark:text-gray-400"}`}>
+            <p className={`text-xs leading-relaxed ${
+              notification.type === "admin_action"
+                ? "font-semibold text-orange-700 dark:text-orange-400"
+                : !notification.isRead
+                  ? "font-medium text-gray-900 dark:text-gray-100"
+                  : "text-gray-600 dark:text-gray-400"
+            }`}>
               {notification.message}
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
@@ -163,7 +186,7 @@ function PanelNotificationItem({
             </p>
           </div>
           {!notification.isRead && !isTransferRequest && (
-            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#6366F1] dark:bg-indigo-400" />
+            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.type === "admin_action" ? "bg-orange-500" : "bg-[#6366F1] dark:bg-indigo-400"}`} />
           )}
         </div>
       </button>
