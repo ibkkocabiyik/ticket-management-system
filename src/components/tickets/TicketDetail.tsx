@@ -306,8 +306,8 @@ export function TicketDetail({ ticketId, onClose }: TicketDetailProps) {
       )}
 
       <div className="grid gap-4 md:grid-cols-3">
-        {/* Main content */}
-        <div className="order-2 md:order-1 space-y-4 md:col-span-2">
+        {/* Main content — mobilde önce gelir */}
+        <div className="order-1 md:order-1 space-y-4 md:col-span-2">
           <div className="rounded-xl border border-gray-200 bg-white p-4 md:p-6 dark:border-gray-700 dark:bg-gray-800">
             <div className="mb-3 flex items-start justify-between gap-3">
               <h1 className="text-base md:text-xl font-bold text-gray-900 dark:text-gray-100">
@@ -337,8 +337,8 @@ export function TicketDetail({ ticketId, onClose }: TicketDetailProps) {
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="order-1 md:order-2 space-y-3">
+        {/* Sidebar — mobilde sonra gelir */}
+        <div className="order-2 md:order-2 space-y-3">
           {/* Yönet — Admin her zaman, Support yalnızca kendi talebiyse */}
           {canEdit && (
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">

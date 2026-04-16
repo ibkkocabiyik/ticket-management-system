@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { useTicketHistory } from "@/hooks/useTicket";
 import { Spinner } from "@/components/ui/Spinner";
 import type { TicketHistory } from "@/types";
-import { History, ArrowRight } from "lucide-react";
+import { History, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 
 const roleLabels: Record<string, string> = {
   Admin: "Admin",
@@ -123,11 +123,14 @@ interface TicketHistoryLogProps {
   ticketId: string;
 }
 
+const INITIAL_SHOW = 5;
+
 export function TicketHistoryLog({ ticketId }: TicketHistoryLogProps) {
   const { data: history, isLoading, isError, error } = useTicketHistory(ticketId);
   const prevFirstIdRef = useRef<string | null | undefined>(undefined);
   const newestId = history?.[0]?.id ?? null;
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     if (history === undefined) return;
@@ -164,17 +167,29 @@ export function TicketHistoryLog({ ticketId }: TicketHistoryLogProps) {
         <p className="text-xs text-gray-400 dark:text-gray-500">Henüz kayıt yok.</p>
       ) : (
         <div className="space-y-0">
-          {history.map((entry, idx) => (
+          {(showAll ? history : history.slice(0, INITIAL_SHOW)).map((entry, idx, arr) => (
             <div
               key={entry.id}
               className={[
-                idx === history.length - 1 ? "[&_.w-px]:hidden" : "",
+                idx === arr.length - 1 && (showAll || history.length <= INITIAL_SHOW) ? "[&_.w-px]:hidden" : "",
                 entry.id === highlightedId ? "animate-comment-in" : "",
               ].filter(Boolean).join(" ")}
             >
               <HistoryItem entry={entry} isHighlighted={entry.id === highlightedId} />
             </div>
           ))}
+          {history.length > INITIAL_SHOW && (
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium text-[#6366F1] hover:bg-[#EEF2FF] dark:text-indigo-400 dark:hover:bg-[#312E81]/20 transition-colors"
+            >
+              {showAll ? (
+                <><ChevronUp size={13} /> Daha az göster</>
+              ) : (
+                <><ChevronDown size={13} /> {history.length - INITIAL_SHOW} kayıt daha göster</>
+              )}
+            </button>
+          )}
         </div>
       )}
     </div>
