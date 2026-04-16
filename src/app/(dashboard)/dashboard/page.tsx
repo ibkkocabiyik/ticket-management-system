@@ -58,6 +58,7 @@ export default function DashboardPage() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const { open: openNewTicket } = useNewTicket();
   const canCreate = session?.user?.role !== "SupportTeam";
+  const canSeeSummary = session?.user?.role === "Admin" || session?.user?.role === "SupportTeam";
 
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["dashboard-stats"],
@@ -80,28 +81,30 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="flex items-center rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-800">
-            <button
-              onClick={() => setActiveTab("tickets")}
-              className={`rounded-lg px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium transition-all duration-200 ${
-                activeTab === "tickets"
-                  ? "bg-[#6366F1] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              Talepler
-            </button>
-            <button
-              onClick={() => setActiveTab("summary")}
-              className={`rounded-lg px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium transition-all duration-200 ${
-                activeTab === "summary"
-                  ? "bg-[#6366F1] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              Özet
-            </button>
-          </div>
+          {canSeeSummary && (
+            <div className="flex items-center rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-800">
+              <button
+                onClick={() => setActiveTab("tickets")}
+                className={`rounded-lg px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium transition-all duration-200 ${
+                  activeTab === "tickets"
+                    ? "bg-[#6366F1] text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Talepler
+              </button>
+              <button
+                onClick={() => setActiveTab("summary")}
+                className={`rounded-lg px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium transition-all duration-200 ${
+                  activeTab === "summary"
+                    ? "bg-[#6366F1] text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Özet
+              </button>
+            </div>
+          )}
           {canCreate && (
             <Button className="gap-1.5 md:gap-2 text-xs md:text-sm px-3 md:px-4" onClick={openNewTicket}>
               <PlusCircle size={14} className="md:hidden" />
@@ -213,16 +216,18 @@ export default function DashboardPage() {
           ) : null}
         </div>
 
-        {/* Özet Tab */}
-        <div
-          className={`transition-all duration-300 ease-out ${
-            activeTab === "summary"
-              ? "opacity-100 translate-y-0"
-              : "pointer-events-none absolute inset-0 translate-y-3 opacity-0"
-          }`}
-        >
-          <SummaryTab />
-        </div>
+        {/* Özet Tab — yalnızca Admin ve SupportTeam */}
+        {canSeeSummary && (
+          <div
+            className={`transition-all duration-300 ease-out ${
+              activeTab === "summary"
+                ? "opacity-100 translate-y-0"
+                : "pointer-events-none absolute inset-0 translate-y-3 opacity-0"
+            }`}
+          >
+            <SummaryTab />
+          </div>
+        )}
       </div>
 
       {/* Ticket Detay Modal */}
