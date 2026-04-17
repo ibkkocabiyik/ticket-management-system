@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { Calendar, MoreHorizontal, ChevronRight } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/ui/Badge";
+import { TicketPreviewCard } from "./TicketPreviewCard";
 import type { Ticket } from "@/types";
 
 interface TicketCardProps {
@@ -32,6 +34,27 @@ export function TicketCard({
 
   function handleCheckbox(e: React.MouseEvent) {
     e.stopPropagation();
+  }
+
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewEnabled = !selectable;
+
+  function handleRowEnter(e: React.MouseEvent<HTMLDivElement>) {
+    if (!previewEnabled) return;
+    const target = e.currentTarget;
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => {
+      setAnchorRect(target.getBoundingClientRect());
+    }, 500);
+  }
+
+  function handleRowLeave() {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+    setAnchorRect(null);
   }
 
   return (
@@ -100,6 +123,8 @@ export function TicketCard({
             : "grid-cols-[2fr_1.5fr_1fr_1fr_1fr_52px] gap-4"
         }`}
         onClick={() => selectable ? onSelect?.(ticket.id, !selected) : onClick?.(ticket.id)}
+        onMouseEnter={handleRowEnter}
+        onMouseLeave={handleRowLeave}
       >
         {selectable && (
           <div onClick={handleCheckbox}>
@@ -157,6 +182,10 @@ export function TicketCard({
           )}
         </div>
       </div>
+
+      {anchorRect && previewEnabled && (
+        <TicketPreviewCard ticket={ticket} anchorRect={anchorRect} />
+      )}
     </>
   );
 }

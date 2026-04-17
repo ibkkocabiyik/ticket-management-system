@@ -315,6 +315,14 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
   - `src/components/tickets/TicketList.tsx` → `effectiveFilters = { assignedToMe: isSupport && !showAll ? true : undefined }`
   - `src/app/api/tickets/route.ts` GET → `assignedToMe` query param desteği
 
+- **Ticket hover önizleme + klavye kısayolları**
+  - `src/components/tickets/TicketPreviewCard.tsx` → yeni; portal ile `position: fixed`, 500ms gecikmeli hover; başlık, badge'ler, açıklama (HTML stripped, 220 char), oluşturan, kategori, tarih, yorum sayısı
+  - `src/components/tickets/TicketCard.tsx` → masaüstü satırına `onMouseEnter/Leave` + `anchorRect` state; seçim modunda preview kapalı
+  - `src/components/layout/KeyboardShortcuts.tsx` → yeni; global `keydown` listener, `N` tuşu yeni talep modal açıyor; input/textarea/contenteditable'da yoksayılıyor, modifier tuşlarla (Ctrl/Meta/Alt) yoksayılıyor, SupportTeam rolü için devre dışı
+  - `src/app/(dashboard)/layout.tsx` → `<KeyboardShortcuts />` eklendi
+  - `tailwind.config.ts` → `fade-in-preview` keyframe + animation
+  - Not: Modal'da Esc zaten `src/components/ui/Modal.tsx` içinde destekleniyor
+
 - **Ticket arama genişletildi** — başlık + açıklama üzerinde case-insensitive arama
   - `src/app/api/tickets/route.ts` → `search` parametresi `OR: [{ title }, { description }]` ile, Prisma `mode: "insensitive"` (PostgreSQL)
   - `src/components/tickets/TicketFilters.tsx` → local `searchInput` state + 300ms debounce, temizleme butonu (X ikonu), placeholder "Başlık veya açıklamada ara..."
@@ -353,8 +361,8 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
 - [ ] **Çalışma saatleri ayarı** — SLA hesaplaması için iş saati tanımı (hafta içi/sonu, tatiller)
 
 #### Kullanıcı Deneyimi
-- [ ] **Ticket önizleme hover** — listede üzerine gelince özet tooltip
-- [ ] **Klavye kısayolları** — `N` yeni ticket, `Esc` modal kapat, `/` arama focus
+- [x] **Ticket önizleme hover** — listede üzerine gelince özet tooltip (500ms delay, portal fixed)
+- [x] **Klavye kısayolları** — `N` yeni ticket, `Esc` modal kapat (`/` arama focus bekleyen)
 - [ ] **Okundu/Okunmadı** — ticket bazlı (şu an sadece bildirimde var)
 
 #### Altyapı

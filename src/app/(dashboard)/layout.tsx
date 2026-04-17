@@ -7,6 +7,7 @@ import { NewTicketProvider } from "@/context/NewTicketContext";
 import { NewTicketModalWrapper } from "@/components/tickets/NewTicketModalWrapper";
 import { TicketDetailProvider } from "@/context/TicketDetailContext";
 import { GlobalTicketModal } from "@/components/tickets/GlobalTicketModal";
+import { KeyboardShortcuts } from "@/components/layout/KeyboardShortcuts";
 
 export default async function DashboardLayout({
   children,
@@ -44,6 +45,9 @@ export default async function DashboardLayout({
 
         {/* Global Talep Detay Modal */}
         <GlobalTicketModal />
+
+        {/* Klavye kısayolları (N: yeni talep) */}
+        <KeyboardShortcuts />
       </TicketDetailProvider>
     </NewTicketProvider>
   );
