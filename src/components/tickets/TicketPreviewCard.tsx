@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Calendar, MessageSquare, User as UserIcon, Tag } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/ui/Badge";
@@ -26,37 +26,37 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-export function TicketPreviewCard({ ticket, cursor }: TicketPreviewCardProps) {
-  const [mounted, setMounted] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const cardRef = useRef<HTMLDivElement | null>(null);
+function computePos(cursor: { x: number; y: number }, h: number) {
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 768;
 
-  useEffect(() => setMounted(true), []);
+  let left = cursor.x + GAP;
+  if (left + CARD_WIDTH > vw - MARGIN) {
+    left = cursor.x - CARD_WIDTH - GAP;
+  }
+  if (left < MARGIN) left = MARGIN;
+
+  let top = cursor.y + GAP;
+  if (top + h > vh - MARGIN) {
+    top = cursor.y - h - GAP;
+  }
+  if (top < MARGIN) top = MARGIN;
+
+  return { top, left };
+}
+
+export function TicketPreviewCard({ ticket, cursor }: TicketPreviewCardProps) {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  // İlk render için tahmini konum; ölçüm sonrası useLayoutEffect günceller
+  const [pos, setPos] = useState(() => computePos(cursor, 280));
 
   useLayoutEffect(() => {
     if (!cardRef.current) return;
     const h = cardRef.current.offsetHeight;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    // Yatay: imlecin sağına; sağa sığmazsa soluna
-    let left = cursor.x + GAP;
-    if (left + CARD_WIDTH > vw - MARGIN) {
-      left = cursor.x - CARD_WIDTH - GAP;
-    }
-    if (left < MARGIN) left = MARGIN;
-
-    // Dikey: imlecin hemen altına; alta sığmazsa üstüne
-    let top = cursor.y + GAP;
-    if (top + h > vh - MARGIN) {
-      top = cursor.y - h - GAP;
-    }
-    if (top < MARGIN) top = MARGIN;
-
-    setPos({ top, left });
+    setPos(computePos(cursor, h));
   }, [cursor.x, cursor.y]);
 
-  if (!mounted) return null;
+  if (typeof document === "undefined") return null;
 
   const description = stripHtml(ticket.description || "").slice(0, 220);
   const commentCount = ticket._count?.comments ?? 0;
@@ -71,10 +71,9 @@ export function TicketPreviewCard({ ticket, cursor }: TicketPreviewCardProps) {
       ref={cardRef}
       className="pointer-events-none fixed z-[250] animate-fade-in-preview"
       style={{
-        top: pos?.top ?? cursor.y + GAP,
-        left: pos?.left ?? cursor.x + GAP,
+        top: pos.top,
+        left: pos.left,
         width: CARD_WIDTH,
-        visibility: pos ? "visible" : "hidden",
       }}
     >
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-gray-700 dark:bg-gray-800">
