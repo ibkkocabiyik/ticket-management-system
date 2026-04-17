@@ -354,6 +354,30 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
   - `src/components/tickets/CommentSection.tsx` → Sil/Yanıtla butonları (admin-only), inline reply editor, nested replies (girintili, sol border)
   - `src/components/layout/NotificationBell.tsx` → `NotificationIcon` helper, `admin_action` turuncu tema (border, arka plan, bold yazı, ShieldAlert ikonu) — hem dropdown hem slide-out panelde
 
+- **Ticket etiketleri (tags) — many-to-many**
+  - `prisma/schema.prisma` → `Tag` modeli (`id`, `name @unique`, `color?`, `createdAt`) + `Ticket.tags Tag[] @relation("TicketTags")` implicit M2M
+  - `src/lib/validations/tag.ts` → `createTagSchema` (min 2, max 30, virgül yasak, hex color opsiyonel)
+  - `src/app/api/tags/route.ts` → GET (auth'lu herkes), POST (Admin/SupportTeam; aynı isim varsa mevcut etiketi döner)
+  - `src/app/api/tags/[id]/route.ts` → DELETE (Admin-only, 204)
+  - `src/lib/api/tags.ts` + `src/hooks/useTags.ts` → `useTags` (5dk staleTime), `useCreateTag`, `useDeleteTag`
+  - `src/components/tickets/TagPicker.tsx` → chip-input bileşen; filtreleme, Enter ile seç/oluştur, Backspace ile son chip'i kaldır, inline "`X` etiketini oluştur" (2+ karakter)
+  - `src/components/tickets/TicketForm.tsx` → TagPicker bölümü, `tagIds` create payload'a ekleniyor
+  - `src/components/tickets/TicketDetail.tsx` → **Etiketler** kartı; Admin/Support için TagPicker, EndUser için read-only chip listesi
+  - `src/components/tickets/TicketCard.tsx` → liste satırında tag chip'leri (masaüstü max 3 + overflow sayısı, mobil max 2)
+  - `src/components/tickets/TicketFilters.tsx` → seçilebilir tag pill sırası (aktif → indigo dolgu); `tags` CSV query param
+  - `src/app/api/tickets/route.ts` → `tags` CSV filtresi → `AND: [{ tags: { some: { id } } }]` (çoklu tag için AND mantığı)
+  - `src/app/api/tickets/[id]/route.ts` → create/update'de `tags: { connect }` / `tags: { set }`; response'ta tags include
+
+- **SLA / Süre takibi**
+  - `prisma/schema.prisma` → `Ticket.resolvedAt DateTime?` alanı
+  - `src/lib/sla.ts` → `SLA_HOURS` map (Urgent=4, High=24, Normal=72, Low=168), `getDeadline`, `getSLAState` — `{ deadline, overdue, resolvedLate, remainingMs, elapsedMs, label }` döner; terminal statüleri `["Resolved","Closed"]`
+  - `src/app/api/tickets/[id]/route.ts` → durum Resolved/Closed'a geçerse `resolvedAt = now()`, geri çıkarsa `resolvedAt = null`
+  - `src/components/tickets/TicketCard.tsx` → masaüstünde "Gecikmiş" kırmızı badge (AlertTriangle ikonu + title: son tarih), mobilde küçük ikon
+  - `src/components/tickets/TicketFilters.tsx` → "Gecikmiş" toggle butonu (aktif kırmızı); `overdue=1` query param
+  - `src/app/api/tickets/route.ts` → `overdue` filtresi → terminal olmayan + öncelik başına `createdAt < now - SLA_HOURS[p]` OR bloğu
+  - `src/components/tickets/TicketDetail.tsx` → **SLA / Süre Takibi** kartı; dört durum: `resolvedLate=true` (amber), zamanında çözüldü (emerald), aktif gecikmiş (kırmızı), beklemede (gri); hedef süre + son tarih + label gösterir
+  - ⚠️ Deploy sonrası `npm run db:push` (Neon'a `Tag` modeli + `resolvedAt` + indexler yansıtılmalı)
+
 ### Sıradaki
 
 **Bildirim Sesi (bekleyen)**
@@ -369,8 +393,8 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
 
 #### Kullanışlılık
 - [x] **Ticket arama** — başlık/içerik full-text search (başlık + açıklama, case-insensitive, debounce)
-- [ ] **Ticket etiketleri (tags)** — serbest etiket sistemi, filtrelenebilir (Tag modeli, many-to-many)
-- [ ] **SLA / Süre takibi** — ticket açılış→çözüm süresi, geciken talepler uyarısı
+- [x] **Ticket etiketleri (tags)** — many-to-many Tag modeli, TagPicker, filtre pill'i
+- [x] **SLA / Süre takibi** — öncelik başına hedef süre, Gecikmiş badge'i + filtre, `resolvedAt` izleme
 - [ ] **Dosya yükleme → S3/R2** — şu an `public/uploads/` Vercel'de kalıcı değil
 
 #### Admin Paneli

@@ -19,6 +19,13 @@ export interface Category {
   description?: string | null;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  color?: string | null;
+  createdAt?: string;
+}
+
 export interface Attachment {
   id: string;
   filename: string;
@@ -51,12 +58,14 @@ export interface Ticket {
   priority: Priority;
   createdAt: string;
   updatedAt: string;
+  resolvedAt?: string | null;
   creatorId: string;
   creator: Pick<User, "id" | "name" | "email">;
   assigneeId?: string | null;
   assignee?: Pick<User, "id" | "name" | "email"> | null;
   categoryId: string;
   category: Category;
+  tags?: Tag[];
   comments?: Comment[];
   attachments?: Attachment[];
   _count?: { comments: number };
@@ -82,6 +91,8 @@ export interface TicketFilters {
   sortBy?: "createdAt" | "priority" | "updatedAt";
   sortOrder?: "asc" | "desc";
   assignedToMe?: boolean;
+  tags?: string[];
+  overdue?: boolean;
 }
 
 export interface DashboardStats {

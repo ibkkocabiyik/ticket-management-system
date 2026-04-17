@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { createTicketSchema, ticketFiltersSchema } from "@/lib/validations/ticket";
 import { notifyTicketCreated } from "@/lib/notifications";
 import type { Priority } from "@/types";
+import { SLA_HOURS } from "@/lib/sla";
 
 const PRIORITY_ORDER: Record<Priority, number> = {
   Low: 1,
@@ -29,9 +30,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { status, priority, categoryId, search, page, pageSize, sortBy, sortOrder, assignedToMe } = parsed.data;
+  const { status, priority, categoryId, search, page, pageSize, sortBy, sortOrder, assignedToMe, tags, overdue } = parsed.data;
 
   const where: Record<string, unknown> = {};
+  const andFilters: Record<string, unknown>[] = [];
 
   if (session.user.role === "EndUser") {
     where.creatorId = session.user.id;
@@ -47,17 +49,36 @@ export async function GET(request: NextRequest) {
   if (search) {
     const term = search.trim();
     if (term.length > 0) {
-      where.OR = [
-        { title: { contains: term, mode: "insensitive" } },
-        { description: { contains: term, mode: "insensitive" } },
-      ];
+      andFilters.push({
+        OR: [
+          { title: { contains: term, mode: "insensitive" } },
+          { description: { contains: term, mode: "insensitive" } },
+        ],
+      });
     }
+  }
+  if (tags && tags.length > 0) {
+    where.tags = { some: { id: { in: tags } } };
+  }
+  if (overdue) {
+    const now = Date.now();
+    andFilters.push({
+      status: { notIn: ["Resolved", "Closed"] },
+      OR: (Object.entries(SLA_HOURS) as [Priority, number][]).map(([p, h]) => ({
+        priority: p,
+        createdAt: { lt: new Date(now - h * 3600 * 1000) },
+      })),
+    });
+  }
+  if (andFilters.length > 0) {
+    where.AND = andFilters;
   }
 
   const include = {
     creator: { select: { id: true, name: true, email: true } },
     assignee: { select: { id: true, name: true, email: true } },
     category: true,
+    tags: true,
     _count: { select: { comments: true } },
   } as const;
 
@@ -114,7 +135,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { title, description, categoryId, priority } = parsed.data;
+  const { title, description, categoryId, priority, tagIds } = parsed.data;
 
   const category = await prisma.category.findUnique({ where: { id: categoryId } });
   if (!category) {
@@ -128,11 +149,15 @@ export async function POST(request: NextRequest) {
       categoryId,
       priority,
       creatorId: session.user.id,
+      ...(tagIds && tagIds.length > 0 && {
+        tags: { connect: tagIds.map((id) => ({ id })) },
+      }),
     },
     include: {
       creator: { select: { id: true, name: true, email: true } },
       assignee: { select: { id: true, name: true, email: true } },
       category: true,
+      tags: true,
     },
   });
 

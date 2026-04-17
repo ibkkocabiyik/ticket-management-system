@@ -15,6 +15,7 @@ import { useTemplates } from "@/hooks/useTemplates";
 import { createTicketSchema, type CreateTicketInput } from "@/lib/validations/ticket";
 import { uploadAttachment } from "@/lib/api/tickets";
 import { FileInput } from "@/components/ui/FileInput";
+import { TagPicker } from "@/components/tickets/TagPicker";
 import {
   Select as RadixSelect,
   SelectContent,
@@ -46,6 +47,7 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
   const [editorKey, setEditorKey] = useState(0);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   const {
     register,
@@ -113,7 +115,7 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
     setSubmitError(null);
 
     try {
-      const ticket = await createTicket({ ...data, description });
+      const ticket = await createTicket({ ...data, description, tagIds: selectedTagIds });
       if (attachedFiles.length > 0) {
         await Promise.allSettled(
           attachedFiles.map((file) => uploadAttachment(file, { ticketId: ticket.id }))
@@ -280,6 +282,14 @@ export function TicketForm({ onSuccess, onCancel }: TicketFormProps) {
             <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.priority.message}</p>
           )}
         </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Etiketler
+          <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">(isteğe bağlı)</span>
+        </label>
+        <TagPicker value={selectedTagIds} onChange={setSelectedTagIds} />
       </div>
 
       <FileInput files={attachedFiles} onChange={setAttachedFiles} />

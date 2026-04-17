@@ -19,11 +19,16 @@ import { Spinner } from "@/components/ui/Spinner";
 import { CommentSection } from "./CommentSection";
 import { TicketHistoryLog } from "./TicketHistoryLog";
 import { AttachmentList } from "./AttachmentList";
+import { TagPicker } from "./TagPicker";
+import { getSLAState, SLA_HOURS } from "@/lib/sla";
 import {
   Calendar,
   User,
   Tag,
   AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Timer,
   ChevronLeft,
   Trash2,
   Edit,
@@ -471,6 +476,81 @@ export function TicketDetail({ ticketId, onClose }: TicketDetailProps) {
               </div>
             </dl>
           </div>
+
+          {/* SLA / Süre Takibi */}
+          {(() => {
+            const sla = getSLAState(ticket.createdAt, ticket.priority, ticket.status, ticket.resolvedAt);
+            const slaHours = SLA_HOURS[ticket.priority];
+            const deadlineStr = sla.deadline.toLocaleDateString("tr-TR", {
+              month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
+            });
+
+            const tone = sla.resolvedLate === true
+              ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-300"
+              : sla.resolvedLate === false
+              ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-900/20 dark:text-emerald-300"
+              : sla.overdue
+              ? "border-red-300 bg-red-50 text-red-700 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-300"
+              : "border-gray-200 bg-white text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300";
+
+            const Icon = sla.resolvedLate === true
+              ? AlertTriangle
+              : sla.resolvedLate === false
+              ? CheckCircle2
+              : sla.overdue
+              ? AlertTriangle
+              : Timer;
+
+            return (
+              <div className={`rounded-xl border p-4 ${tone}`}>
+                <div className="flex items-center gap-2">
+                  <Icon size={16} />
+                  <h2 className="text-sm font-semibold">SLA / Süre Takibi</h2>
+                </div>
+                <div className="mt-2 space-y-1 text-xs">
+                  <p>
+                    <span className="opacity-70">Hedef süre: </span>
+                    <span className="font-semibold">{slaHours} saat</span>
+                  </p>
+                  <p>
+                    <span className="opacity-70">Son tarih: </span>
+                    <span className="font-medium">{deadlineStr}</span>
+                  </p>
+                  <p className="font-semibold">{sla.label}</p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Etiketler */}
+          {(isAdmin || isSupport) ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+              <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Etiketler</h2>
+              <TagPicker
+                value={(ticket.tags ?? []).map((t) => t.id)}
+                onChange={(ids) => {
+                  void updateTicket({ tagIds: ids });
+                }}
+                disabled={!canEdit}
+              />
+            </div>
+          ) : (ticket.tags && ticket.tags.length > 0) ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+              <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Etiketler</h2>
+              <div className="flex flex-wrap gap-1.5">
+                {ticket.tags.map((t) => (
+                  <span
+                    key={t.id}
+                    className="inline-flex items-center gap-1 rounded-md bg-[#EEF2FF] px-2 py-0.5 text-xs font-medium text-[#6366F1] dark:bg-[#312E81]/40 dark:text-indigo-300"
+                    style={t.color ? { backgroundColor: `${t.color}22`, color: t.color } : undefined}
+                  >
+                    <Tag size={10} />
+                    {t.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           {/* Geçmiş */}
           <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">

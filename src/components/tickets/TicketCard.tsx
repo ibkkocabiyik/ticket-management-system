@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Calendar, MoreHorizontal, ChevronRight } from "lucide-react";
+import { Calendar, MoreHorizontal, ChevronRight, AlertTriangle, Tag as TagIcon } from "lucide-react";
 import { StatusBadge, PriorityBadge } from "@/components/ui/Badge";
 import { TicketPreviewCard } from "./TicketPreviewCard";
+import { getSLAState } from "@/lib/sla";
 import type { Ticket } from "@/types";
 
 interface TicketCardProps {
@@ -28,6 +29,9 @@ export function TicketCard({
     day: "numeric",
     year: "numeric",
   });
+
+  const sla = getSLAState(ticket.createdAt, ticket.priority, ticket.status, ticket.resolvedAt);
+  const tags = ticket.tags ?? [];
 
   const animClass = isNew ? "animate-slide-in-fade-in" : "";
   const selectedClass = selected ? "bg-indigo-50/70 dark:bg-indigo-900/20" : "";
@@ -89,15 +93,33 @@ export function TicketCard({
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-            {ticket.title}
-          </p>
+          <div className="flex items-start gap-1.5">
+            <p className="flex-1 text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+              {ticket.title}
+            </p>
+            {sla.overdue && (
+              <AlertTriangle size={13} className="mt-0.5 shrink-0 text-red-500" aria-label="Gecikmiş" />
+            )}
+          </div>
           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
             {ticket.category.name}
           </p>
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             <StatusBadge status={ticket.status} />
             <PriorityBadge priority={ticket.priority} />
+            {tags.slice(0, 2).map((t) => (
+              <span
+                key={t.id}
+                className="inline-flex items-center gap-0.5 rounded-md bg-[#EEF2FF] px-1.5 py-0.5 text-[10px] font-medium text-[#6366F1] dark:bg-[#312E81]/40 dark:text-indigo-300"
+                style={t.color ? { backgroundColor: `${t.color}22`, color: t.color } : undefined}
+              >
+                <TagIcon size={8} />
+                {t.name}
+              </span>
+            ))}
+            {tags.length > 2 && (
+              <span className="text-[10px] text-gray-400">+{tags.length - 2}</span>
+            )}
           </div>
           <div className="mt-2 flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
             <span className="flex items-center gap-1">
@@ -146,12 +168,42 @@ export function TicketCard({
         )}
 
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-gray-900 transition-colors group-hover:text-[#6366F1] dark:text-gray-100 dark:group-hover:text-indigo-400">
-            {ticket.title}
-          </p>
-          <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">
-            {ticket.category.name}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-semibold text-gray-900 transition-colors group-hover:text-[#6366F1] dark:text-gray-100 dark:group-hover:text-indigo-400">
+              {ticket.title}
+            </p>
+            {sla.overdue && (
+              <span
+                className="inline-flex items-center gap-0.5 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                title={`SLA aşıldı — son tarih: ${sla.deadline.toLocaleString("tr-TR")}`}
+              >
+                <AlertTriangle size={10} />
+                Gecikmiş
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <p className="truncate text-xs text-gray-400 dark:text-gray-500">
+              {ticket.category.name}
+            </p>
+            {tags.length > 0 && (
+              <div className="flex items-center gap-1 overflow-hidden">
+                {tags.slice(0, 3).map((t) => (
+                  <span
+                    key={t.id}
+                    className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-[#EEF2FF] px-1.5 py-0.5 text-[10px] font-medium text-[#6366F1] dark:bg-[#312E81]/40 dark:text-indigo-300"
+                    style={t.color ? { backgroundColor: `${t.color}22`, color: t.color } : undefined}
+                  >
+                    <TagIcon size={8} />
+                    {t.name}
+                  </span>
+                ))}
+                {tags.length > 3 && (
+                  <span className="shrink-0 text-[10px] text-gray-400">+{tags.length - 3}</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex min-w-0 items-center gap-2">

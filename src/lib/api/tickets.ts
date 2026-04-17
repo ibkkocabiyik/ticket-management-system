@@ -12,6 +12,8 @@ function buildQueryString(filters: TicketFilters): string {
   if (filters.sortBy) params.set("sortBy", filters.sortBy);
   if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
   if (filters.assignedToMe) params.set("assignedToMe", "true");
+  if (filters.tags && filters.tags.length > 0) params.set("tags", filters.tags.join(","));
+  if (filters.overdue) params.set("overdue", "true");
   return params.toString();
 }
 

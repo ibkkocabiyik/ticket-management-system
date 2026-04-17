@@ -24,6 +24,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       creator: { select: { id: true, name: true, email: true } },
       assignee: { select: { id: true, name: true, email: true } },
       category: true,
+      tags: true,
       attachments: true,
       _count: { select: { comments: true } },
     },
@@ -96,9 +97,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         creator: { select: { id: true, name: true, email: true } },
         assignee: { select: { id: true, name: true, email: true } },
         category: true,
+        tags: true,
       },
     });
     return NextResponse.json(updatedTicket);
+  }
+
+  // resolvedAt state transition
+  const TERMINAL = ["Resolved", "Closed"];
+  let resolvedAtUpdate: { resolvedAt?: Date | null } = {};
+  if (data.status) {
+    const wasTerminal = TERMINAL.includes(ticket.status);
+    const willBeTerminal = TERMINAL.includes(data.status);
+    if (!wasTerminal && willBeTerminal) {
+      resolvedAtUpdate = { resolvedAt: new Date() };
+    } else if (wasTerminal && !willBeTerminal) {
+      resolvedAtUpdate = { resolvedAt: null };
+    }
   }
 
   const updatedTicket = await prisma.ticket.update({
@@ -110,11 +125,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       ...(data.priority && { priority: data.priority }),
       ...(data.categoryId && { categoryId: data.categoryId }),
       ...(data.assigneeId !== undefined && { assigneeId: data.assigneeId }),
+      ...(data.tagIds !== undefined && {
+        tags: { set: data.tagIds.map((id) => ({ id })) },
+      }),
+      ...resolvedAtUpdate,
     },
     include: {
       creator: { select: { id: true, name: true, email: true } },
       assignee: { select: { id: true, name: true, email: true } },
       category: true,
+      tags: true,
     },
   });
 

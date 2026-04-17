@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useCategories } from "@/hooks/useCategories";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { useTags } from "@/hooks/useTags";
+import { Search, SlidersHorizontal, X, Tag as TagIcon, AlertTriangle } from "lucide-react";
 import type { TicketFilters as Filters } from "@/types";
 import {
   Select,
@@ -23,6 +24,7 @@ interface TicketFiltersProps {
 
 export function TicketFilters({ filters, onFiltersChange, isSupport, showAll = true, onShowAllChange }: TicketFiltersProps) {
   const { data: categories } = useCategories();
+  const { data: tags = [] } = useTags();
   const [searchInput, setSearchInput] = useState(filters.search ?? "");
 
   // Sync local input when filters.search changes externally (e.g. reset)
@@ -48,6 +50,8 @@ export function TicketFilters({ filters, onFiltersChange, isSupport, showAll = t
       pageSize: 10,
       sortBy: "createdAt",
       sortOrder: "desc",
+      tags: undefined,
+      overdue: undefined,
     });
   };
 
@@ -58,7 +62,17 @@ export function TicketFilters({ filters, onFiltersChange, isSupport, showAll = t
     filters.priority,
     filters.categoryId,
     filters.search,
+    filters.tags && filters.tags.length > 0 ? "tags" : null,
+    filters.overdue ? "overdue" : null,
   ].filter(Boolean).length;
+
+  const selectedTagIds = filters.tags ?? [];
+  function toggleTag(id: string) {
+    const next = selectedTagIds.includes(id)
+      ? selectedTagIds.filter((t) => t !== id)
+      : [...selectedTagIds, id];
+    onFiltersChange({ ...filters, tags: next.length > 0 ? next : undefined, page: 1 });
+  }
 
   const categoryOptions = categories?.map((c) => ({ value: c.id, label: c.name })) ?? [];
 
@@ -203,6 +217,25 @@ export function TicketFilters({ filters, onFiltersChange, isSupport, showAll = t
           </SelectContent>
         </Select>
 
+        {/* Gecikmiş */}
+        <button
+          onClick={() =>
+            onFiltersChange({
+              ...filters,
+              overdue: filters.overdue ? undefined : true,
+              page: 1,
+            })
+          }
+          className={`flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors ${
+            filters.overdue
+              ? "border-red-300 bg-red-50 text-red-600 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400"
+              : "border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:text-red-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-red-800 dark:hover:text-red-400"
+          }`}
+        >
+          <AlertTriangle size={12} />
+          Gecikmiş
+        </button>
+
         {/* Tüm Talepleri Göster — sadece SupportTeam */}
         {isSupport && (
           <label className="flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 transition-colors hover:border-[#6366F1]/40 hover:bg-[#EEF2FF] hover:text-[#6366F1] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-[#6366F1]/40 dark:hover:bg-[#312E81]/20 dark:hover:text-indigo-300 select-none">
@@ -241,6 +274,33 @@ export function TicketFilters({ filters, onFiltersChange, isSupport, showAll = t
           </button>
         )}
       </div>
+
+      {tags.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+            <TagIcon size={11} />
+            Etiketler
+          </span>
+          {tags.map((t) => {
+            const active = selectedTagIds.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggleTag(t.id)}
+                className={`rounded-lg border px-2 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? "border-[#6366F1] bg-[#EEF2FF] text-[#6366F1] dark:border-[#6366F1]/50 dark:bg-[#312E81]/40 dark:text-indigo-300"
+                    : "border-gray-200 bg-white text-gray-600 hover:border-[#6366F1]/40 hover:text-[#6366F1] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+                }`}
+                style={active && t.color ? { borderColor: t.color, color: t.color, backgroundColor: `${t.color}22` } : undefined}
+              >
+                {t.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

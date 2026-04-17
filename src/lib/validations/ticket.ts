@@ -8,6 +8,7 @@ export const createTicketSchema = z.object({
   description: z.string().optional().default(""),
   categoryId: z.string().min(1, "Kategori seçimi zorunludur"),
   priority: z.enum(["Low", "Normal", "High", "Urgent"]).optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 export const updateTicketSchema = z.object({
@@ -27,6 +28,7 @@ export const updateTicketSchema = z.object({
   priority: z.enum(["Low", "Normal", "High", "Urgent"]).optional(),
   categoryId: z.string().min(1, "Category is required").optional(),
   assigneeId: z.string().nullable().optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 export const ticketFiltersSchema = z.object({
@@ -41,6 +43,11 @@ export const ticketFiltersSchema = z.object({
   sortBy: z.enum(["createdAt", "priority", "updatedAt"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
   assignedToMe: z.coerce.boolean().optional(),
+  tags: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.split(",").filter(Boolean) : undefined)),
+  overdue: z.coerce.boolean().optional(),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
