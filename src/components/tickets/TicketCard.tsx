@@ -36,17 +36,23 @@ export function TicketCard({
     e.stopPropagation();
   }
 
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewEnabled = !selectable;
 
   function handleRowEnter(e: React.MouseEvent<HTMLDivElement>) {
     if (!previewEnabled) return;
-    const target = e.currentTarget;
+    setCursor({ x: e.clientX, y: e.clientY });
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     hoverTimer.current = setTimeout(() => {
-      setAnchorRect(target.getBoundingClientRect());
+      setPreviewVisible(true);
     }, 500);
+  }
+
+  function handleRowMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!previewEnabled) return;
+    setCursor({ x: e.clientX, y: e.clientY });
   }
 
   function handleRowLeave() {
@@ -54,7 +60,8 @@ export function TicketCard({
       clearTimeout(hoverTimer.current);
       hoverTimer.current = null;
     }
-    setAnchorRect(null);
+    setPreviewVisible(false);
+    setCursor(null);
   }
 
   return (
@@ -124,6 +131,7 @@ export function TicketCard({
         }`}
         onClick={() => selectable ? onSelect?.(ticket.id, !selected) : onClick?.(ticket.id)}
         onMouseEnter={handleRowEnter}
+        onMouseMove={handleRowMove}
         onMouseLeave={handleRowLeave}
       >
         {selectable && (
@@ -183,8 +191,8 @@ export function TicketCard({
         </div>
       </div>
 
-      {anchorRect && previewEnabled && (
-        <TicketPreviewCard ticket={ticket} anchorRect={anchorRect} />
+      {previewVisible && cursor && previewEnabled && (
+        <TicketPreviewCard ticket={ticket} cursor={cursor} />
       )}
     </>
   );

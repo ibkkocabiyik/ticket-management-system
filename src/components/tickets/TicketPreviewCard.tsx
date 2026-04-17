@@ -8,12 +8,12 @@ import type { Ticket } from "@/types";
 
 interface TicketPreviewCardProps {
   ticket: Ticket;
-  anchorRect: DOMRect;
+  cursor: { x: number; y: number };
 }
 
 const CARD_WIDTH = 360;
 const CARD_MAX_HEIGHT = 340;
-const GAP = 12;
+const GAP = 16;
 
 function stripHtml(html: string): string {
   return html
@@ -26,7 +26,7 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-export function TicketPreviewCard({ ticket, anchorRect }: TicketPreviewCardProps) {
+export function TicketPreviewCard({ ticket, cursor }: TicketPreviewCardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
@@ -34,17 +34,18 @@ export function TicketPreviewCard({ ticket, anchorRect }: TicketPreviewCardProps
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  // Prefer right side of the row; fall back to left if overflows
-  let left = anchorRect.right + GAP;
+  // İmlecin sağ-altına yerleştir; taşarsa sol/üst tarafa çevir
+  let left = cursor.x + GAP;
   if (left + CARD_WIDTH > vw - 8) {
-    left = anchorRect.left - CARD_WIDTH - GAP;
+    left = cursor.x - CARD_WIDTH - GAP;
   }
   if (left < 8) left = 8;
 
-  let top = anchorRect.top;
+  let top = cursor.y + GAP;
   if (top + CARD_MAX_HEIGHT > vh - 8) {
-    top = Math.max(8, vh - CARD_MAX_HEIGHT - 8);
+    top = cursor.y - CARD_MAX_HEIGHT - GAP;
   }
+  if (top < 8) top = 8;
 
   const description = stripHtml(ticket.description || "").slice(0, 220);
   const commentCount = ticket._count?.comments ?? 0;
