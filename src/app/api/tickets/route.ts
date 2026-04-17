@@ -54,42 +54,31 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const total = await prisma.ticket.count({ where });
+  const include = {
+    creator: { select: { id: true, name: true, email: true } },
+    assignee: { select: { id: true, name: true, email: true } },
+    category: true,
+    _count: { select: { comments: true } },
+  } as const;
 
-  let tickets;
-  if (sortBy === "priority") {
-    tickets = await prisma.ticket.findMany({
+  const [total, ticketsRaw] = await Promise.all([
+    prisma.ticket.count({ where }),
+    prisma.ticket.findMany({
       where,
-      include: {
-        creator: { select: { id: true, name: true, email: true } },
-        assignee: { select: { id: true, name: true, email: true } },
-        category: true,
-        _count: { select: { comments: true } },
-      },
+      include,
       skip: (page - 1) * pageSize,
       take: pageSize,
-      orderBy: { createdAt: "desc" },
-    });
+      orderBy: sortBy === "priority" ? { createdAt: "desc" } : { [sortBy]: sortOrder },
+    }),
+  ]);
 
-    tickets.sort((a, b) => {
-      const aPrio = PRIORITY_ORDER[a.priority as Priority] ?? 2;
-      const bPrio = PRIORITY_ORDER[b.priority as Priority] ?? 2;
-      return sortOrder === "asc" ? aPrio - bPrio : bPrio - aPrio;
-    });
-  } else {
-    tickets = await prisma.ticket.findMany({
-      where,
-      include: {
-        creator: { select: { id: true, name: true, email: true } },
-        assignee: { select: { id: true, name: true, email: true } },
-        category: true,
-        _count: { select: { comments: true } },
-      },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      orderBy: { [sortBy]: sortOrder },
-    });
-  }
+  const tickets = sortBy === "priority"
+    ? [...ticketsRaw].sort((a, b) => {
+        const aPrio = PRIORITY_ORDER[a.priority as Priority] ?? 2;
+        const bPrio = PRIORITY_ORDER[b.priority as Priority] ?? 2;
+        return sortOrder === "asc" ? aPrio - bPrio : bPrio - aPrio;
+      })
+    : ticketsRaw;
 
   return NextResponse.json({
     data: tickets,

@@ -100,6 +100,13 @@ model Ticket {
   history          TicketHistory[]
   attachments      Attachment[]
   transferRequests TransferRequest[]
+
+  @@index([creatorId])
+  @@index([assigneeId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
 }
 
 model Comment {
@@ -114,6 +121,10 @@ model Comment {
   parentCommentId String?
   parentComment   Comment?     @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
   replies         Comment[]    @relation("CommentReplies")
+
+  @@index([ticketId])
+  @@index([authorId])
+  @@index([parentCommentId])
 }
 
 model Attachment {
@@ -142,6 +153,9 @@ model Notification {
   message           String
   isRead            Boolean          @default(false)
   createdAt         DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
 }
 
 model TransferRequest {
@@ -169,4 +183,6 @@ model TicketHistory {
   oldValue   String?
   newValue   String?
   createdAt  DateTime @default(now())
+
+  @@index([ticketId, createdAt])
 }

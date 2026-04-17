@@ -327,6 +327,23 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
   - `src/app/api/tickets/route.ts` → `search` parametresi `OR: [{ title }, { description }]` ile, Prisma `mode: "insensitive"` (PostgreSQL)
   - `src/components/tickets/TicketFilters.tsx` → local `searchInput` state + 300ms debounce, temizleme butonu (X ikonu), placeholder "Başlık veya açıklamada ara..."
 
+- **Ticket önizleme kartı iyileştirmeleri**
+  - `src/components/tickets/TicketPreviewCard.tsx` → satır bounding rect yerine imleç konumunu takip ediyor; prop `cursor: {x,y}`
+  - Gerçek kart yüksekliği `useLayoutEffect` + `cardRef.offsetHeight` ile ölçülüyor; `computePos()` yardımcı fonksiyonu imlecin sağ-altına yerleştiriyor, viewport'a sığmazsa sol/üste çeviriyor, `MARGIN` kenar boşluğu bırakıyor
+  - `mounted` state + `useEffect` kaldırıldı (gecikmeli ilk render sebep oluyordu); başlangıç pozisyonu `useState` initializer'ında tahmini yükseklikle hesaplanıyor — hover anında bir frame'de görünüyor, `visibility: hidden` flash'ı yok
+  - `src/components/tickets/TicketCard.tsx` → `anchorRect` yerine `cursor` + `previewVisible` state; `onMouseMove` ile konum güncelleniyor, `onMouseEnter` 500ms timer sonrası görünür yapıyor
+
+- **Dashboard hızlı işlem linkleri tickets sayfasıyla senkron**
+  - `src/components/tickets/TicketList.tsx` → `useSearchParams` ile `status` ve `priority` query parametreleri okunuyor; beyaz listeden geçiriliyor (`Status`/`Priority` tipleri); `useState` başlangıç değeri ve `useEffect` ile URL değişince filtre senkronlanıp sayfa 1'e dönüyor
+  - Dashboard'daki "Açık Talepleri Gör" / "İşlemdekiler" linkleri (`/tickets?status=Open`, `/tickets?status=InProgress`) tıklandığında durum dropdown'u otomatik seçili geliyor
+
+- **Performans iyileştirmeleri**
+  - `prisma/schema.prisma` → `Ticket` modeline indeksler (`creatorId`, `assigneeId`, `categoryId`, `status`, `priority`, `createdAt`); `Comment` (`ticketId`, `authorId`, `parentCommentId`); `Notification` composite indeksler (`[userId, createdAt]`, `[userId, isRead]`); `TicketHistory` (`[ticketId, createdAt]`). Uygulamak için `npm run db:push` gerekli
+  - `src/app/api/tickets/route.ts` GET → `count` + `findMany` artık `Promise.all` ile paralel; tek `orderBy` branch'i, öncelik sıralaması bellek içinde uygulanıyor
+  - `src/app/api/dashboard/stats/route.ts` → 6 ayrı `count` sorgusu yerine tek `groupBy({ by: ["status"] })`
+  - `src/hooks/useNotifications.ts` → polling 10s → 30s, `refetchIntervalInBackground: false` (sekme arka plandayken durur); `useAllNotifications` kendi polling'ini bıraktı (global polling yeterli), `staleTime: 30_000`
+  - `src/hooks/useTickets.ts` → `placeholderData: keepPreviousData` — filtre/sayfa değişiminde spinner flash yok, önceki sonuç görünmeye devam ediyor
+
 - **Admin yorum silme + yanıtlama + admin_action bildirimi**
   - `prisma/schema.prisma` → Comment modeline `parentCommentId` self-relation (`"CommentReplies"`, `onDelete: Cascade`)
   - `src/app/api/tickets/[id]/comments/route.ts` → GET: `parentCommentId: null` filtresi + `replies` include; POST: `parentCommentId` desteği + admin yanıt bildirimi

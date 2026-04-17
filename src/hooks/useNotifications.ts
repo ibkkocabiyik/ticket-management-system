@@ -34,7 +34,8 @@ export function useNotifications() {
   const query = useQuery({
     queryKey: ["notifications"],
     queryFn: getNotifications,
-    refetchInterval: 10000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 
   useEffect(() => {
@@ -58,8 +59,7 @@ export function useAllNotifications(enabled: boolean) {
     queryKey: ["notifications", "all"],
     queryFn: () => getNotificationsWithLimit(50),
     enabled,
-    staleTime: 0,
-    refetchInterval: enabled ? 10_000 : false,
+    staleTime: 30_000,
   });
 }
 

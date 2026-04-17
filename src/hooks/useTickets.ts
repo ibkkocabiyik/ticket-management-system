@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { getTickets, createTicket, updateTicket, deleteTicket, bulkTicketAction, type BulkAction } from "@/lib/api/tickets";
 import type { TicketFilters } from "@/types";
 import type { CreateTicketInput, UpdateTicketInput } from "@/lib/validations/ticket";
@@ -9,6 +9,7 @@ export function useTickets(filters: TicketFilters = {}) {
   return useQuery({
     queryKey: ["tickets", filters],
     queryFn: () => getTickets(filters),
+    placeholderData: keepPreviousData,
   });
 }
 
