@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useCategories } from "@/hooks/useCategories";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import type { TicketFilters as Filters } from "@/types";
 import {
   Select,
@@ -22,8 +23,26 @@ interface TicketFiltersProps {
 
 export function TicketFilters({ filters, onFiltersChange, isSupport, showAll = true, onShowAllChange }: TicketFiltersProps) {
   const { data: categories } = useCategories();
+  const [searchInput, setSearchInput] = useState(filters.search ?? "");
+
+  // Sync local input when filters.search changes externally (e.g. reset)
+  useEffect(() => {
+    setSearchInput(filters.search ?? "");
+  }, [filters.search]);
+
+  // Debounce search input → 300ms
+  useEffect(() => {
+    const current = filters.search ?? "";
+    if (searchInput === current) return;
+    const timer = setTimeout(() => {
+      onFiltersChange({ ...filters, search: searchInput || undefined, page: 1 });
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
 
   const handleReset = () => {
+    setSearchInput("");
     onFiltersChange({
       page: 1,
       pageSize: 10,
@@ -50,13 +69,21 @@ export function TicketFilters({ filters, onFiltersChange, isSupport, showAll = t
       <div className="relative w-full">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
-          placeholder="Talep ara..."
-          className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-colors focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500"
-          value={filters.search ?? ""}
-          onChange={(e) =>
-            onFiltersChange({ ...filters, search: e.target.value, page: 1 })
-          }
+          placeholder="Başlık veya açıklamada ara..."
+          className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-9 pr-9 text-sm text-gray-700 placeholder-gray-400 outline-none transition-colors focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
         />
+        {searchInput && (
+          <button
+            type="button"
+            onClick={() => setSearchInput("")}
+            aria-label="Aramayı temizle"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       {/* Filtreler satırı */}

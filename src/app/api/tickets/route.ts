@@ -45,7 +45,13 @@ export async function GET(request: NextRequest) {
   if (priority) where.priority = priority;
   if (categoryId) where.categoryId = categoryId;
   if (search) {
-    where.title = { contains: search };
+    const term = search.trim();
+    if (term.length > 0) {
+      where.OR = [
+        { title: { contains: term, mode: "insensitive" } },
+        { description: { contains: term, mode: "insensitive" } },
+      ];
+    }
   }
 
   const total = await prisma.ticket.count({ where });

@@ -315,6 +315,10 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
   - `src/components/tickets/TicketList.tsx` → `effectiveFilters = { assignedToMe: isSupport && !showAll ? true : undefined }`
   - `src/app/api/tickets/route.ts` GET → `assignedToMe` query param desteği
 
+- **Ticket arama genişletildi** — başlık + açıklama üzerinde case-insensitive arama
+  - `src/app/api/tickets/route.ts` → `search` parametresi `OR: [{ title }, { description }]` ile, Prisma `mode: "insensitive"` (PostgreSQL)
+  - `src/components/tickets/TicketFilters.tsx` → local `searchInput` state + 300ms debounce, temizleme butonu (X ikonu), placeholder "Başlık veya açıklamada ara..."
+
 - **Admin yorum silme + yanıtlama + admin_action bildirimi**
   - `prisma/schema.prisma` → Comment modeline `parentCommentId` self-relation (`"CommentReplies"`, `onDelete: Cascade`)
   - `src/app/api/tickets/[id]/comments/route.ts` → GET: `parentCommentId: null` filtresi + `replies` include; POST: `parentCommentId` desteği + admin yanıt bildirimi
@@ -335,3 +339,29 @@ Bu olursa ilgili dosyaları orijinaline döndür, `.next` cache'ini temizle (`rm
 **Aşama 7: E-posta Bildirimleri**
 - Nodemailer entegrasyonu
 - Ticket oluşturulunca, yanıtlanınca otomatik mail
+
+### Yapılacaklar Listesi (Yol Haritası)
+
+#### Kullanışlılık
+- [x] **Ticket arama** — başlık/içerik full-text search (başlık + açıklama, case-insensitive, debounce)
+- [ ] **Ticket etiketleri (tags)** — serbest etiket sistemi, filtrelenebilir (Tag modeli, many-to-many)
+- [ ] **SLA / Süre takibi** — ticket açılış→çözüm süresi, geciken talepler uyarısı
+- [ ] **Dosya yükleme → S3/R2** — şu an `public/uploads/` Vercel'de kalıcı değil
+
+#### Admin Paneli
+- [ ] **Raporlama sayfası** — kategori/kullanıcı/zaman bazlı istatistikler (grafik + CSV export)
+- [ ] **Çalışma saatleri ayarı** — SLA hesaplaması için iş saati tanımı (hafta içi/sonu, tatiller)
+
+#### Kullanıcı Deneyimi
+- [ ] **Ticket önizleme hover** — listede üzerine gelince özet tooltip
+- [ ] **Klavye kısayolları** — `N` yeni ticket, `Esc` modal kapat, `/` arama focus
+- [ ] **Okundu/Okunmadı** — ticket bazlı (şu an sadece bildirimde var)
+
+#### Altyapı
+- [ ] **Rate limiting** — API route'lara istek sınırı (upstash/redis veya in-memory)
+- [ ] **Webhook desteği** — harici sistemlere (Slack, Teams, Discord) bildirim
+
+#### Entegrasyon
+- [ ] **Google OAuth aktivasyonu** — `.env` ve Vercel'e `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` eklenmesi (kod hazır)
+- [ ] **E-posta bildirimleri** — Nodemailer (Aşama 7)
+- [ ] **Bildirim sesi** — AudioContext autoplay policy çözümü
