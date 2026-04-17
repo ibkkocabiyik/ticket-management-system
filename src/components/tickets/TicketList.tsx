@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { useTickets, useBulkTicketAction } from "@/hooks/useTickets";
 import { TicketCard } from "./TicketCard";
 import { TicketFilters } from "./TicketFilters";
@@ -50,12 +51,36 @@ export function TicketList({ onTicketClick }: TicketListProps) {
 
   const isSupport = session?.user?.role === "SupportTeam";
 
+  const searchParams = useSearchParams();
+  const VALID_STATUSES: Status[] = ["Open", "InProgress", "Waiting", "Resolved", "Closed"];
+  const VALID_PRIORITIES: Priority[] = ["Low", "Normal", "High", "Urgent"];
+  const statusParam = searchParams.get("status");
+  const priorityParam = searchParams.get("priority");
+  const initialStatus = statusParam && (VALID_STATUSES as string[]).includes(statusParam)
+    ? (statusParam as Status)
+    : undefined;
+  const initialPriority = priorityParam && (VALID_PRIORITIES as string[]).includes(priorityParam)
+    ? (priorityParam as Priority)
+    : undefined;
+
   const [filters, setFilters] = useState<Filters>({
     page: 1,
     pageSize: 10,
     sortBy: "createdAt",
     sortOrder: "desc",
+    status: initialStatus,
+    priority: initialPriority,
   });
+
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      page: 1,
+      status: initialStatus,
+      priority: initialPriority,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusParam, priorityParam]);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
