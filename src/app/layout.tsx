@@ -10,7 +10,9 @@ export const metadata: Metadata = {
   description: "Manage support tickets efficiently",
   icons: {
     icon: "/favicon.png",
+    apple: "/favicon.png",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
