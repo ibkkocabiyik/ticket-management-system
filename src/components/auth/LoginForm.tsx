@@ -84,6 +84,7 @@ const HESAPLAR = [
   { rol: "Kullanıcı", email: "info@digitalmedya.com.tr", sifre: "user123" },
   { rol: "Kullanıcı", email: "it@novanet.com.tr", sifre: "user123" },
   { rol: "Kullanıcı", email: "destek@eticaretplus.com", sifre: "user123" },
+  { rol: "Demo", email: "demo@demo.com", sifre: "demo123" },
 ];
 
 function TestHesaplar({ setValue }: { setValue: (field: "email" | "password", value: string) => void }) {

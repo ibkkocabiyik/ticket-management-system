@@ -19,6 +19,7 @@ async function main() {
   const adminPw = await bcryptjs.hash("admin123", 10);
   const supportPw = await bcryptjs.hash("support123", 10);
   const userPw = await bcryptjs.hash("user123", 10);
+  const demoPw = await bcryptjs.hash("demo123", 10);
 
   // ─── Kullanıcılar ───────────────────────────────────────────────────────────
   const admin = await prisma.user.create({
@@ -44,6 +45,9 @@ async function main() {
   });
   const user3 = await prisma.user.create({
     data: { email: "destek@eticaretplus.com", name: "Emre Aydın", password: userPw, role: "EndUser" },
+  });
+  await prisma.user.create({
+    data: { email: "demo@demo.com", name: "Demo Kullanıcı", password: demoPw, role: "EndUser" },
   });
 
   console.log("Kullanıcılar oluşturuldu");
