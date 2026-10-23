@@ -6,3 +6,4 @@ public/uploads/*
 prisma/dev.db
 
 .vercel
+tsconfig.tsbuildinfo
